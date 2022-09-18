@@ -31,7 +31,7 @@ app.use(bodyParser.json())
 app.use(cors());
 
 app.get('/', (req, res) => {
-  console.log("App running change")
+  res.send('Hello Express app!');
     // const path = resolve(process.env.STATIC_DIR + '/index.html')
     // res.sendFile(path)
 })
@@ -75,6 +75,9 @@ app.post('/webhook', (req,res) => {
 
 
 app.post("/prebuiltcheckout", async (req, res) => {
+
+    console.log("prebuilt checkout hit")
+  
     try {
         
 
