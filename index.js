@@ -95,9 +95,9 @@ app.post("/prebuiltcheckout", cors(), async (req, res) => {
         cancel_url: 'http://localhost:4242/cancel',
     });
 
-    console.log("session", session)
+    // console.log("session", session)
 
-    console.log("response", res)
+    // console.log("response", res)
     res.redirect(303, session.url);
     // return stripe.redirectToCheckout({ sessionId: session.id });
     //   res.send({ customer, session });
