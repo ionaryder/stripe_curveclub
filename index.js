@@ -1,10 +1,11 @@
 // require('dotenv').config({path: './.env'})
 const express = require('express')
+var cors = require('cors');
 const app = express();
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); 
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY_LIVE); 
 const {resolve} = require('path')
 const bodyParser = require('body-parser')
-var cors = require('cors');
+
 
 //FIREBASE
 const { initializeApp } = require("firebase/app");
@@ -26,14 +27,18 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-app.use(cors({origin: '*'}));
-// app.use(express.static(process.env.STATIC_DIR))
+app.use(
+  cors({
+    allowedHeaders: ["authorization", "Content-Type"], // you can change the headers
+    exposedHeaders: ["authorization"], // you can change the headers
+    origin: "*",
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    preflightContinue: false
+  })
+);
+app.options('*', cors());  // enable pre-flight
 app.use(bodyParser.json())
 
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  next();
-});
 
 app.get('/', (req, res) => {
   res.send('Hello Express app!');
@@ -42,7 +47,7 @@ app.get('/', (req, res) => {
 })
 
 app.get('/public-keys', (req,res) => {
-    res.send({ key: process.env.STRIPE_PUBLIC_KEY})
+    res.send({ key: process.env.STRIPE_PUBLIC_KEY_LIVE})
 })
 
 app.post('/myroute', (req,res) => {
@@ -50,10 +55,10 @@ app.post('/myroute', (req,res) => {
     res.send(req.body)
 })
 
-app.post('/webhook', cors(), (req,res) => {
+app.post('/webhook', (req,res) => {
     const event = req.body;
 
-    console.log(req.body)
+    console.log("webhook hit")
 
     switch(event.type) {
         case 'checkout.session.completed':
@@ -79,7 +84,7 @@ app.post('/webhook', cors(), (req,res) => {
 })
 
 
-app.post("/prebuiltcheckout", cors(), async (req, res) => {
+app.post("/prebuiltcheckout", async (req, res) => {
 
     console.log("prebuilt checkout hit")
   
@@ -91,17 +96,18 @@ app.post("/prebuiltcheckout", cors(), async (req, res) => {
         payment_method_types: ['card'],
         mode: 'setup',
         customer: customer.id,
-        success_url: 'http://localhost:4242/success?session_id={CHECKOUT_SESSION_ID}',
-        cancel_url: 'http://localhost:4242/cancel',
+        success_url: 'http://localhost:3000/application_submitted',
+        cancel_url: 'http://localhost:3000/application',
     });
 
     // console.log("session", session)
 
-    // console.log("response", res)
-    res.redirect(303, session.url);
+    // console.log("session url", session.url)
+    res.json({url: session.url})
     // return stripe.redirectToCheckout({ sessionId: session.id });
-    //   res.send({ customer, session });
+      // res.send({ customer, session });
     } catch (error) {
+      console.log(error)
       res.status(400).send({ error });
     }
   });
