@@ -26,9 +26,10 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+app.use(cors({origin: '*'}));
 // app.use(express.static(process.env.STATIC_DIR))
-// app.use(bodyParser.json())
-app.use(cors());
+app.use(bodyParser.json())
+
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   next();
