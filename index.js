@@ -1,4 +1,4 @@
-require('dotenv').config({path: './.env'})
+// require('dotenv').config({path: './.env'})
 const express = require('express')
 const app = express();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); 
@@ -45,7 +45,7 @@ app.post('/myroute', (req,res) => {
     res.send(req.body)
 })
 
-app.post('/webhook', (req,res) => {
+app.post('/webhook', cors(), (req,res) => {
     const event = req.body;
 
     console.log(req.body)
@@ -74,7 +74,7 @@ app.post('/webhook', (req,res) => {
 })
 
 
-app.post("/prebuiltcheckout", async (req, res) => {
+app.post("/prebuiltcheckout", cors(), async (req, res) => {
 
     console.log("prebuilt checkout hit")
   
