@@ -27,6 +27,8 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+var applicationInformation = {}
+
 app.use(
   cors({
     allowedHeaders: ["authorization", "Content-Type"], // you can change the headers
@@ -55,8 +57,9 @@ app.post('/myroute', (req,res) => {
     res.send(req.body)
 })
 
-app.post('/webhook', (req,res) => {
+app.post('/webhook', async (req,res) => {
     const event = req.body;
+    const applicationReference = doc(collection(db, "applications"));
 
     console.log("webhook hit")
 
@@ -74,6 +77,10 @@ app.post('/webhook', (req,res) => {
             console.log("SetupIntent Created: ", setupIntent.id)
             console.log("Customer: ", setupIntent.customer)
             console.log("Payment Method", setupIntent.payment_method)
+            applicationInformation.customer = setupIntent.customer
+            applicationInformation.payment_method = setupIntent.payment_method
+            console.log("Applicant", applicationInformation)
+            await setDoc(applicationReference, applicationInformation);
             break;    
         default:
             console.log('Unknown event type: ' + event.type)
@@ -86,7 +93,8 @@ app.post('/webhook', (req,res) => {
 
 app.post("/prebuiltcheckout", async (req, res) => {
 
-    console.log("prebuilt checkout hit")
+    console.log("prebuilt checkout hit", req.body)
+    applicationInformation = req.body
   
     try {
         
@@ -96,8 +104,8 @@ app.post("/prebuiltcheckout", async (req, res) => {
         payment_method_types: ['card'],
         mode: 'setup',
         customer: customer.id,
-        success_url: 'http://localhost:3000/application_submitted',
-        cancel_url: 'http://localhost:3000/application',
+        success_url: 'https://curvewebsite.herokuapp.com/application_submitted',
+        cancel_url: 'https://curvewebsite.herokuapp.com/application',
     });
 
     // console.log("session", session)
