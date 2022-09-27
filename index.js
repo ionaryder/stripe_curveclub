@@ -104,8 +104,8 @@ app.post("/prebuiltcheckout", async (req, res) => {
       payment_method_types: ['card'],
       mode: 'setup',
       customer: customer.id,
-      success_url: 'https://curvewebsite.herokuapp.com/application_submitted',
-      cancel_url: 'https://curvewebsite.herokuapp.com/application-page',
+      success_url: 'https://www.curve.club/application_submitted',
+      cancel_url: 'https://www.curve.club/application-page',
     });
 
     // console.log("session", session)
