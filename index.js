@@ -82,6 +82,19 @@ app.post('/webhook', async (req, res) => {
       console.log("Applicant", applicationInformation)
       await setDoc(applicationReference, applicationInformation);
       break;
+    case 'charge.succeeded':
+      const chargeSucceeded = event.data.object;
+      console.log("charge succeeded", chargeSucceeded)
+      console.log("customer", chargeSucceeded.customer)
+
+      const q = query(collection(db, "applications"), where("customer", "==", chargeSucceeded.customer));
+
+      const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((document) => {
+          console.log(document.id, " => ", document.data());
+          const appRef = doc(db, 'applications', document.id);
+          setDoc(appRef, { approved: true }, { merge: true });
+        });
     default:
       console.log('Unknown event type: ' + event.type)
   }
@@ -122,25 +135,48 @@ app.post("/prebuiltcheckout", async (req, res) => {
 
 
 app.post("/chargeUser", async (req, res) => {
-  try {
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: 200,
-      currency: 'gbp',
-      customer: 'cus_MRZPGQixbQEPuu',
-      payment_method: 'pm_1LigHUDQ1Xr1pzwr11np7fNj',
-      off_session: true,
-      confirm: true,
 
-    });
+  console.log(req.body)
 
-    res.json({ clientSecret: paymentIntent.client_secret })
-  } catch (err) {
-    // Error code will be authentication_required if authentication is needed
-    console.log('Error code is: ', err.code);
-    res.status(400).json({ error: { message: err.message } })
-    // const paymentIntentRetrieved = await stripe.paymentIntents.retrieve(err.raw.payment_intent.id);
-    // console.log('PI retrieved: ', paymentIntentRetrieved.id);
+  const payments = req.body
+
+  for (let i = 0; i < payments.length; i++) {
+    const customerDetails = payments[i]
+    const customerId = customerDetails["Customer"]
+    const paymentId = customerDetails["Payment Method"]
+    const paymentType = customerDetails["Payment Type"]
+    var paymentAmount = 0
+
+    if (paymentType == "monthly") {
+      paymentAmount = 100
+    }
+    else if (paymentType == "annual") {
+      paymentAmount = 200
+    }
+    console.log(customerId, paymentId, paymentAmount)
+
+    try {
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: paymentAmount,
+        currency: 'gbp',
+        customer: customerId,
+        payment_method: paymentId,
+        off_session: true,
+        confirm: true,
+      });
+
+      res.json({ clientSecret: paymentIntent.client_secret })
+    } catch (err) {
+      // Error code will be authentication_required if authentication is needed
+      console.log('Error code is: ', err.code);
+      res.status(400).json({ error: { message: err.message } })
+      // const paymentIntentRetrieved = await  
+      //stripe.paymentIntents.retrieve(err.raw.payment_intent.id);
+      // console.log('PI retrieved: ', paymentIntentRetrieved.id);
+    }
   }
+
+
 
 
 })
