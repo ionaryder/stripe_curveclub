@@ -87,9 +87,9 @@ app.post('/webhook', async (req, res) => {
       console.log("charge failed", chargeFailed)
       console.log("customer", chargeFailed.customer)
 
-      const q = query(collection(db, "applications"), where("customer", "==", chargeFailed.customer));
+      const q1 = query(collection(db, "applications"), where("customer", "==", chargeFailed.customer));
 
-      const querySnapshot = await getDocs(q);
+      const querySnapshot = await getDocs(q1);
       querySnapshot.forEach((document) => {
         console.log(document.id, " => ", document.data());
         const appRef = doc(db, 'applications', document.id);
