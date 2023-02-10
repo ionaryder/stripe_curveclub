@@ -89,8 +89,8 @@ app.post('/webhook', async (req, res) => {
 
       const q1 = query(collection(db, "applications"), where("customer", "==", chargeFailed.customer));
 
-      const querySnapshot = await getDocs(q1);
-      querySnapshot.forEach((document) => {
+      const querySnapshot2 = await getDocs(q1);
+      querySnapshot2.forEach((document) => {
         console.log(document.id, " => ", document.data());
         const appRef = doc(db, 'applications', document.id);
         setDoc(appRef, { chargeFailed: true }, { merge: true });
