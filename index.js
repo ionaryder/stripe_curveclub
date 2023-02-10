@@ -82,6 +82,19 @@ app.post('/webhook', async (req, res) => {
       console.log("Applicant", applicationInformation)
       await setDoc(applicationReference, applicationInformation);
       break;
+    case 'charge.failed':
+      const chargeFailed = event.data.object;
+      console.log("charge failed", chargeFailed)
+      console.log("customer", chargeFailed.customer)
+
+      const q = query(collection(db, "applications"), where("customer", "==", chargeFailed.customer));
+
+      const querySnapshot = await getDocs(q);
+      querySnapshot.forEach((document) => {
+        console.log(document.id, " => ", document.data());
+        const appRef = doc(db, 'applications', document.id);
+        setDoc(appRef, { chargeFailed: true }, { merge: true });
+      });
     case 'charge.succeeded':
       const chargeSucceeded = event.data.object;
       console.log("charge succeeded", chargeSucceeded)
@@ -90,11 +103,11 @@ app.post('/webhook', async (req, res) => {
       const q = query(collection(db, "applications"), where("customer", "==", chargeSucceeded.customer));
 
       const querySnapshot = await getDocs(q);
-        querySnapshot.forEach((document) => {
-          console.log(document.id, " => ", document.data());
-          const appRef = doc(db, 'applications', document.id);
-          setDoc(appRef, { approved: true }, { merge: true });
-        });
+      querySnapshot.forEach((document) => {
+        console.log(document.id, " => ", document.data());
+        const appRef = doc(db, 'applications', document.id);
+        setDoc(appRef, { approved: true }, { merge: true });
+      });
     default:
       console.log('Unknown event type: ' + event.type)
   }
