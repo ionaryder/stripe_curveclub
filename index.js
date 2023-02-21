@@ -60,6 +60,7 @@ app.post('/myroute', (req, res) => {
 app.post('/webhook', async (req, res) => {
   const event = req.body;
   const applicationReference = doc(collection(db, "applications"));
+  const dinnerReference = doc(collection(db, "dinner-registrations"));
 
   console.log("webhook hit")
 
@@ -80,7 +81,14 @@ app.post('/webhook', async (req, res) => {
       applicationInformation.customer = setupIntent.customer
       applicationInformation.payment_method = setupIntent.payment_method
       console.log("Applicant", applicationInformation)
-      await setDoc(applicationReference, applicationInformation);
+      console.log("name", applicationInformation.name)
+      if (applicationInformation.name == undefined){
+        await setDoc(applicationReference, applicationInformation);
+      }
+      else if (applicationInformation.name != undefined) {
+        await setDoc(dinnerReference, applicationInformation);
+      }
+      
       break;
     case 'charge.failed':
       const chargeFailed = event.data.object;
@@ -122,21 +130,38 @@ app.post("/prebuiltcheckout", async (req, res) => {
   console.log("prebuilt checkout hit", req.body)
   applicationInformation = req.body
 
+  let directUrl = ""
+  let cancelUrl = ""
+
+  if (applicationInformation.firstname != undefined && applicationInformation.clubhouse != undefined){
+
+    directUrl = "https://www.curve.club/application_submitted"
+    cancelUrl =  "https://www.curve.club/application-page"
+    
+  }
+
+  else {
+
+    directUrl = "https://www.curve.club/signupcomplete"
+    cancelUrl =  "https://www.curve.club/dinner-registration"
+    
+  }
+
   try {
 
 
     const customer = await stripe.customers.create();
+    
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'setup',
       customer: customer.id,
-      success_url: 'https://www.curve.club/application_submitted',
-      cancel_url: 'https://www.curve.club/application-page',
+      success_url: directUrl,
+      cancel_url: cancelUrl,
     });
 
-    // console.log("session", session)
-
-    // console.log("session url", session.url)
+    
+   
     res.json({ url: session.url })
     // return stripe.redirectToCheckout({ sessionId: session.id });
     // res.send({ customer, session });
