@@ -65,6 +65,9 @@ app.post('/webhook', async (req, res) => {
   console.log("webhook hit")
 
   switch (event.type) {
+    case 'customer.created':
+      const customer = event.data.object;
+      console.log("customer created", applicationInformation)
     case 'checkout.session.completed':
       const session = event.data.object;
       console.log("checkout session id: ", session.id)
@@ -82,13 +85,20 @@ app.post('/webhook', async (req, res) => {
       applicationInformation.payment_method = setupIntent.payment_method
       console.log("Applicant", applicationInformation)
       console.log("name", applicationInformation.name)
-      if (applicationInformation.name == undefined){
+      if (applicationInformation.firstname != undefined) {
         await setDoc(applicationReference, applicationInformation);
+        applicationInformation = {}
       }
       else if (applicationInformation.name != undefined) {
         await setDoc(dinnerReference, applicationInformation);
+        applicationInformation = {}
       }
-      
+      else {
+        applicationInformation.issue = "We couldn't find the applicationInformation"
+        await setDoc(applicationReference, applicationInformation);
+        applicationInformation = {}
+      }
+
       break;
     case 'charge.failed':
       const chargeFailed = event.data.object;
@@ -130,28 +140,30 @@ app.post("/prebuiltcheckout", async (req, res) => {
   console.log("prebuilt checkout hit", req.body)
   applicationInformation = req.body
 
+  console.log(applicationInformation)
+
   let directUrl = ""
   let cancelUrl = ""
 
-  if (applicationInformation.firstname != undefined && applicationInformation.clubhouse != undefined){
+  if (applicationInformation.firstname != undefined && applicationInformation.clubhouse != undefined) {
 
     directUrl = "https://www.curve.club/application_submitted"
-    cancelUrl =  "https://www.curve.club/application-page"
-    
+    cancelUrl = "https://www.curve.club/application-page"
+
   }
 
   else {
 
     directUrl = "https://www.curve.club/signupcomplete"
-    cancelUrl =  "https://www.curve.club/dinner-registration"
-    
+    cancelUrl = "https://www.curve.club/dinner-registration"
+
   }
 
   try {
 
 
     const customer = await stripe.customers.create();
-    
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'setup',
@@ -160,8 +172,8 @@ app.post("/prebuiltcheckout", async (req, res) => {
       cancel_url: cancelUrl,
     });
 
-    
-   
+
+
     res.json({ url: session.url })
     // return stripe.redirectToCheckout({ sessionId: session.id });
     // res.send({ customer, session });
@@ -170,6 +182,50 @@ app.post("/prebuiltcheckout", async (req, res) => {
     res.status(400).send({ error });
   }
 });
+
+app.post("/monthyCharge", async (req, res) => {
+
+  console.log(req.body)
+
+  const payments = req.body
+
+  for (let i = 0; i < payments.length; i++) {
+    const customerDetails = payments[i]
+    const customerId = customerDetails["customerid"]
+    const paymentId = customerDetails["paymentid"]
+    const paymentType = customerDetails["paymentType"]
+    const membershipType = customerDetails["membershipType"]
+    var paymentAmount = 0
+
+    if (paymentType == "monthly" && membershipType == "founding" ) {
+      paymentAmount = 100
+    }
+    else if (paymentType == "annual") {
+      console.log("annual user")
+    }
+    console.log(customerId, paymentId, paymentAmount)
+
+    try {
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: paymentAmount,
+        currency: 'gbp',
+        customer: customerId,
+        payment_method: paymentId,
+        off_session: true,
+        confirm: true,
+      });
+
+      res.json({ clientSecret: paymentIntent.client_secret })
+    } catch (err) {
+      // Error code will be authentication_required if authentication is needed
+      console.log('Error code is: ', err.code);
+      res.status(400).json({ error: { message: err.message } })
+      // const paymentIntentRetrieved = await  
+      //stripe.paymentIntents.retrieve(err.raw.payment_intent.id);
+      // console.log('PI retrieved: ', paymentIntentRetrieved.id);
+    }
+  }
+})
 
 
 app.post("/chargeUser", async (req, res) => {
@@ -180,9 +236,9 @@ app.post("/chargeUser", async (req, res) => {
 
   for (let i = 0; i < payments.length; i++) {
     const customerDetails = payments[i]
-    const customerId = customerDetails["Customer"]
-    const paymentId = customerDetails["Payment Method"]
-    const paymentType = customerDetails["Payment Type"]
+    const customerId = customerDetails["customerid"]
+    const paymentId = customerDetails["paymentid"]
+    const paymentType = customerDetails["paymentType"]
     var paymentAmount = 0
 
     if (paymentType == "monthly") {
@@ -213,10 +269,6 @@ app.post("/chargeUser", async (req, res) => {
       // console.log('PI retrieved: ', paymentIntentRetrieved.id);
     }
   }
-
-
-
-
 })
 
 
