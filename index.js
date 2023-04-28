@@ -183,7 +183,7 @@ app.post("/prebuiltcheckout", async (req, res) => {
   }
 });
 
-app.post("/monthyCharge", async (req, res) => {
+app.post("/monthlyCharge", async (req, res) => {
 
   console.log(req.body)
 
@@ -197,7 +197,7 @@ app.post("/monthyCharge", async (req, res) => {
     const membershipType = customerDetails["membershipType"]
     var paymentAmount = 0
 
-    if (paymentType == "monthly" && membershipType == "founding" ) {
+    if (paymentType == "monthly" && paymentType == "founder" && membershipType == "founder" ) {
       paymentAmount = 100
     }
     else if (paymentType == "annual") {
