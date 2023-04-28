@@ -28,6 +28,7 @@ const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 var applicationInformation = {}
+var memberInformation = {}
 
 app.use(
   cors({
@@ -60,6 +61,7 @@ app.post('/myroute', (req, res) => {
 app.post('/webhook', async (req, res) => {
   const event = req.body;
   const applicationReference = doc(collection(db, "applications"));
+  const memberReference = doc(collection(db, "members"));
   const dinnerReference = doc(collection(db, "dinner-registrations"));
 
   console.log("webhook hit")
@@ -102,8 +104,10 @@ app.post('/webhook', async (req, res) => {
       break;
     case 'charge.failed':
       const chargeFailed = event.data.object;
-      console.log("charge failed", chargeFailed)
+      // console.log("charge failed", chargeFailed)
       console.log("customer", chargeFailed.customer)
+      console.log("applicationInfo", applicationInformation)
+      if (!applicationInformation.length == 0){
 
       const q1 = query(collection(db, "applications"), where("customer", "==", chargeFailed.customer));
 
@@ -113,6 +117,9 @@ app.post('/webhook', async (req, res) => {
         const appRef = doc(db, 'applications', document.id);
         setDoc(appRef, { chargeFailed: true }, { merge: true });
       });
+
+      }
+      
     case 'charge.succeeded':
       const chargeSucceeded = event.data.object;
       console.log("charge succeeded", chargeSucceeded)
@@ -197,7 +204,10 @@ app.post("/monthlyCharge", async (req, res) => {
     const membershipType = customerDetails["membershipType"]
     var paymentAmount = 0
 
-    if (paymentType == "monthly" && paymentType == "founder" && membershipType == "founder" ) {
+    console.log(customerId, paymentId, paymentType, membershipType)
+
+    if (paymentType == "founder" && membershipType == "founding") {
+      console.log("got here")
       paymentAmount = 100
     }
     else if (paymentType == "annual") {
@@ -219,7 +229,7 @@ app.post("/monthlyCharge", async (req, res) => {
     } catch (err) {
       // Error code will be authentication_required if authentication is needed
       console.log('Error code is: ', err.code);
-      res.status(400).json({ error: { message: err.message } })
+      // res.status(400).json({ error: { message: err.message } })
       // const paymentIntentRetrieved = await  
       //stripe.paymentIntents.retrieve(err.raw.payment_intent.id);
       // console.log('PI retrieved: ', paymentIntentRetrieved.id);
@@ -227,8 +237,7 @@ app.post("/monthlyCharge", async (req, res) => {
   }
 })
 
-
-app.post("/chargeUser", async (req, res) => {
+app.post("/chargeUseronApproval", async (req, res) => {
 
   console.log(req.body)
 
@@ -239,15 +248,8 @@ app.post("/chargeUser", async (req, res) => {
     const customerId = customerDetails["customerid"]
     const paymentId = customerDetails["paymentid"]
     const paymentType = customerDetails["paymentType"]
-    var paymentAmount = 0
+    var paymentAmount = 100
 
-    if (paymentType == "monthly") {
-      paymentAmount = 100
-    }
-    else if (paymentType == "annual") {
-      paymentAmount = 200
-    }
-    console.log(customerId, paymentId, paymentAmount)
 
     try {
       const paymentIntent = await stripe.paymentIntents.create({
@@ -263,7 +265,7 @@ app.post("/chargeUser", async (req, res) => {
     } catch (err) {
       // Error code will be authentication_required if authentication is needed
       console.log('Error code is: ', err.code);
-      res.status(400).json({ error: { message: err.message } })
+      // res.status(400).json({ error: { message: err.message } })
       // const paymentIntentRetrieved = await  
       //stripe.paymentIntents.retrieve(err.raw.payment_intent.id);
       // console.log('PI retrieved: ', paymentIntentRetrieved.id);
