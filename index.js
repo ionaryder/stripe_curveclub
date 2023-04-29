@@ -123,7 +123,7 @@ app.post('/webhook', async (req, res) => {
     case 'charge.succeeded':
       const chargeSucceeded = event.data.object;
       console.log("charge succeeded", chargeSucceeded)
-      console.log("customer", chargeSucceeded.customer)
+      console.log("customer code", chargeSucceeded.customer)
 
       const q = query(collection(db, "applications"), where("customer", "==", chargeSucceeded.customer));
 
