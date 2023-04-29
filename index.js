@@ -107,19 +107,19 @@ app.post('/webhook', async (req, res) => {
       // console.log("charge failed", chargeFailed)
       console.log("customer", chargeFailed.customer)
       console.log("applicationInfo", applicationInformation)
-      if (!applicationInformation.length == 0){
+      if (!applicationInformation.length == 0) {
 
-      const q1 = query(collection(db, "applications"), where("customer", "==", chargeFailed.customer));
+        const q1 = query(collection(db, "applications"), where("customer", "==", chargeFailed.customer));
 
-      const querySnapshot2 = await getDocs(q1);
-      querySnapshot2.forEach((document) => {
-        console.log(document.id, " => ", document.data());
-        const appRef = doc(db, 'applications', document.id);
-        setDoc(appRef, { chargeFailed: true }, { merge: true });
-      });
+        const querySnapshot2 = await getDocs(q1);
+        querySnapshot2.forEach((document) => {
+          console.log(document.id, " => ", document.data());
+          const appRef = doc(db, 'applications', document.id);
+          setDoc(appRef, { chargeFailed: true }, { merge: true });
+        });
 
       }
-      
+
     case 'charge.succeeded':
       const chargeSucceeded = event.data.object;
       console.log("charge succeeded", chargeSucceeded)
