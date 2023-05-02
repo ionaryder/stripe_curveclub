@@ -202,17 +202,16 @@ app.post("/monthlyCharge", async (req, res) => {
     const paymentId = customerDetails["paymentid"]
     const paymentType = customerDetails["paymentType"]
     const membershipType = customerDetails["membershipType"]
-    var paymentAmount = 0
+    var paymentAmount = 22000
 
-    console.log(customerId, paymentId, paymentType, membershipType)
 
-    if (paymentType == "founder" && membershipType == "founding") {
-      console.log("got here")
-      paymentAmount = 100
-    }
-    else if (paymentType == "annual") {
-      console.log("annual user")
-    }
+    // if (paymentType == "founder" && membershipType == "founding") {
+    // console.log("got here")
+    // paymentAmount = 22000
+    // }
+    // else if (paymentType == "annual") {
+    //   console.log("annual user")
+    // }
     console.log(customerId, paymentId, paymentAmount)
 
     try {
