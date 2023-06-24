@@ -170,7 +170,11 @@ app.post("/prebuiltcheckout", async (req, res) => {
   try {
 
 
-    const customer = await stripe.customers.create();
+    // const customer = await stripe.customers.create(); //add email
+
+    const customer = await stripe.customers.create({
+      email: applicationInformation.email // replace with the customer's email
+    });
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
