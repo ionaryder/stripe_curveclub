@@ -86,6 +86,8 @@ app.post('/webhook', async (req, res) => {
       applicationInformation.customer = setupIntent.customer
       applicationInformation.payment_method = setupIntent.payment_method
       applicationInformation.onboarded = false
+      applicationInformation.active = true
+      applicationInformation.freeMembership = false
       console.log("Applicant", applicationInformation)
       console.log("name", applicationInformation.name)
       if (applicationInformation.firstname != undefined) {
@@ -207,7 +209,7 @@ app.post("/monthlyCharge", async (req, res) => {
     const paymentId = customerDetails["paymentid"]
     const paymentType = customerDetails["paymentType"]
     // const membershipType = customerDetails["membershipType"]
-    var paymentAmount = 22000
+    var paymentAmount = customerDetails["paymentAmount"]
 
 
     // if (paymentType == "founder" && membershipType == "founding") {
