@@ -86,7 +86,7 @@ app.post('/webhook', async (req, res) => {
       applicationInformation.customer = setupIntent.customer
       applicationInformation.payment_method = setupIntent.payment_method
       applicationInformation.onboarded = false
-      applicationInformation.active = true
+
       applicationInformation.freeMembership = false
       console.log("Applicant", applicationInformation)
       console.log("name", applicationInformation.name)
@@ -127,15 +127,20 @@ app.post('/webhook', async (req, res) => {
       const chargeSucceeded = event.data.object;
       console.log("charge succeeded", chargeSucceeded)
       console.log("customer code", chargeSucceeded.customer)
+      console.log("customer paid", chargeSucceeded.paid)
 
       const q = query(collection(db, "applications"), where("customer", "==", chargeSucceeded.customer));
 
-      const querySnapshot = await getDocs(q);
-      querySnapshot.forEach((document) => {
-        console.log(document.id, " => ", document.data());
-        const appRef = doc(db, 'applications', document.id);
-        setDoc(appRef, { approved: true }, { merge: true });
-      });
+      if (chargeSucceeded.paid == true) {
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((document) => {
+          console.log(document.id, " => ", document.data());
+          const appRef = doc(db, 'applications', document.id);
+          setDoc(appRef, { approved: true, active: true }, { merge: true });
+        });
+      }
+
+
     default:
       console.log('Unknown event type: ' + event.type)
   }
