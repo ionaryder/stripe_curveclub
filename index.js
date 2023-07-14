@@ -155,7 +155,7 @@ app.post("/prebuiltcheckout", async (req, res) => {
   console.log("prebuilt checkout hit", req.body)
   applicationInformation = req.body
 
-  console.log(applicationInformation)
+  console.log("app info", applicationInformation)
 
   let directUrl = ""
   let cancelUrl = ""
@@ -182,6 +182,8 @@ app.post("/prebuiltcheckout", async (req, res) => {
     const customer = await stripe.customers.create({
       email: applicationInformation.email // replace with the customer's email
     });
+
+    console.log("testing", applicationInformation.email)
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
