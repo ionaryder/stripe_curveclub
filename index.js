@@ -252,7 +252,7 @@ app.post("/monthlyCharge", async (req, res) => {
 
 
 
-app.post("/chargeUseronApproval", async (req, res) => {
+app.post("/setupSubscription", async (req, res) => {
 
   console.log(req.body)
 
@@ -263,20 +263,33 @@ app.post("/chargeUseronApproval", async (req, res) => {
     const customerId = customerDetails["customerid"]
     const paymentId = customerDetails["paymentid"]
     const paymentType = customerDetails["paymentType"]
-    var paymentAmount = 100
+    const membership = customerDetails["membership"]
+    var subscriptionType = {
+      "vip_founder" : "price_1NO2luDQ1Xr1pzwr7Y0L8KQi",
+      "founder" : "price_1NR8Y8DQ1Xr1pzwrEkarkW5V",
+      "vip_investor" : "price_1NVrPGDQ1Xr1pzwrxtxRKyeA",
+      "investor" : ""
+    }
+   // var subscriptionTypeDiscounted = {
+   //    "vip_founder" : "",
+   //    "founder" : "price_1NT4t7DQ1Xr1pzwr210RuOp0",
+   //    "vip_investor" : "",
+   //    "investor" : ""
+   //  }
 
 
     try {
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: paymentAmount,
-        currency: 'gbp',
-        customer: customerId,
-        payment_method: paymentId,
-        off_session: true,
-        confirm: true,
-      });
+    const subscription = await stripe.subscriptions.create({
+      customer: customerId,
+      items: [
+        { price: subscriptionType[membership] },
+      ],
+      default_payment_method: paymentId,
+      automatic_tax: { "enabled": true },
+    });
 
-      res.json({ clientSecret: paymentIntent.client_secret })
+
+      res.json({ clientSecret: subscription })
     } catch (err) {
       // Error code will be authentication_required if authentication is needed
       console.log('Error code is: ', err.code);
