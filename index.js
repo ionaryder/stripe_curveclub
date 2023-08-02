@@ -279,6 +279,18 @@ app.post("/setupSubscription", async (req, res) => {
 
 
     try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: 2500,
+      currency: 'gbp',
+      customer: 'cus_OMfT5MkNkhV6bc',
+      payment_method: 'pm_1NZw9sDQ1Xr1pzwr70k8KkYF',
+      off_session: true,
+      confirm: true,
+      // billing_address_collection: 'auto',
+      // description: `Curve Club Membership (including tax: ${taxAmount} GBP)`,
+    });
+
+      
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [
@@ -287,6 +299,8 @@ app.post("/setupSubscription", async (req, res) => {
       default_payment_method: paymentId,
       automatic_tax: { "enabled": true },
     });
+
+      
 
 
       res.json({ clientSecret: subscription })
@@ -301,7 +315,28 @@ app.post("/setupSubscription", async (req, res) => {
   }
 })
 
+app.post("/pauseSubscription", async (req, res) => {
 
+  console.log("check", req.body)
+
+  const customer = req.body
+
+  const customerId = customer.id;
+
+  try {
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customerId,
+    });
+
+    // Send the subscription IDs back to the client
+    console.log("subscriptions", subscriptions)
+    res.send(subscriptions);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ error: 'An error occurred while retrieving the subscriptions.' });
+  }
+  
+})
 
 
 app.listen(process.env.PORT || 3000, () => {
