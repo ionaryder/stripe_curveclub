@@ -282,8 +282,8 @@ app.post("/setupSubscription", async (req, res) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: 2500,
       currency: 'gbp',
-      customer: 'cus_OMfT5MkNkhV6bc',
-      payment_method: 'pm_1NZw9sDQ1Xr1pzwr70k8KkYF',
+      customer: customerId,
+      payment_method: paymentId,
       off_session: true,
       confirm: true,
       // billing_address_collection: 'auto',
