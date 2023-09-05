@@ -261,10 +261,13 @@ app.post("/event_payment", async (req, res) => {
     const details = payments[i]
     const customerId = details["customerid"]
     // const paymentId = customerDetails["paymentid"]
-    const product = details["product"]
+    // const product = details["product"]
     const price = details["stripe_price"]
 
     try {
+
+      
+      
     const paymentIntent = await stripe.paymentIntents.create({
       amount: price,
       currency: 'gbp',
