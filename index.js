@@ -251,6 +251,44 @@ app.post("/monthlyCharge", async (req, res) => {
 })
 
 
+app.post("/event_payment", async (req, res) => {
+
+  console.log(req.body)
+
+  const payments = req.body
+
+  for (let i = 0; i < payments.length; i++) {
+    const details = payments[i]
+    const customerId = details["customerid"]
+    // const paymentId = customerDetails["paymentid"]
+    const product = details["product"]
+    const price = details["stripe_price"]
+
+    try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: price,
+      currency: 'gbp',
+      customer: customerId,
+      items: [
+        {
+          price: 'price_1NffzSDQ1Xr1pzwr4eU8EswM', // Use the Price ID associated with the product
+          quantity: 1, // You can adjust the quantity if needed
+        },
+      ],
+      // billing_address_collection: 'auto',
+      // description: `Curve Club Membership (including tax: ${taxAmount} GBP)`,
+    });
+
+      
+
+
+      res.json({ clientSecret: paymentIntent })
+    } catch (err) {
+      // Error code will be authentication_required if authentication is needed
+      console.log('Error code is: ', err.code);
+    }
+  }
+})
 
 app.post("/setupSubscription", async (req, res) => {
 
