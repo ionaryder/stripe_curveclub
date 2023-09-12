@@ -417,6 +417,8 @@ app.post("/event_payment", async (req, res) => {
     res.json({ clientSecret: paymentIntent })
   } catch (err) {
     // Error code will be authentication_required if authentication is needed
+    // res.json({ clientSecret: err })
+    res.status(500).json({ error: err.code });
     console.log('Error code is: ', err.code);
   }
 
