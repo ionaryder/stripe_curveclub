@@ -311,8 +311,6 @@ app.post("/prebuiltcheckout", async (req, res) => {
   }
 
   try {
-
-
     // const customer = await stripe.customers.create(); //add email
 
     const customer = await stripe.customers.create({
@@ -336,6 +334,51 @@ app.post("/prebuiltcheckout", async (req, res) => {
     // res.send({ customer, session });
   } catch (error) {
     console.log(error)
+    res.status(400).send({ error });
+  }
+});
+
+app.post("/claimpass_checkout", async (req, res) => {
+  const requestData = req.body;
+
+  console.log("app info", requestData);
+
+  let directUrl = "https://www.curve.club/claim-pass-confirmed";
+  let cancelUrl = "https://www.curve.club/claim-pass";
+
+  try {
+    // Create a customer
+    const customer = await stripe.customers.create({
+      email: requestData.email // Replace with the customer's email
+    });
+
+    // Create a Payment Intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: requestData.stripe_price, // Replace with the amount in cents (e.g., 1000 for $10.00)
+      currency: 'gbp', // Replace with your desired currency code
+      customer: customer.id,
+      payment_method_types: ['card'],
+    });
+
+    // Create a Checkout Session using the Payment Intent
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment',
+      customer: customer.id,
+      payment_intent_data: {
+        setup_future_usage: 'off_session', // This ensures that the payment can be used for future off-session payments.
+      },
+      success_url: directUrl,
+      cancel_url: cancelUrl,
+      line_items: [{
+        price: requestData.product_id, // Replace with the Price ID of your product
+        quantity: 1,
+      }],
+    });
+
+    res.json({ url: session.url });
+  } catch (error) {
+    console.error(error);
     res.status(400).send({ error });
   }
 });
@@ -385,7 +428,6 @@ app.post("/monthlyCharge", async (req, res) => {
     }
   }
 })
-
 
 app.post("/event_payment", async (req, res) => {
 
