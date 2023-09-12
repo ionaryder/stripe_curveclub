@@ -9,7 +9,7 @@ const bodyParser = require('body-parser')
 
 //FIREBASE
 const { initializeApp } = require("firebase/app");
-const { doc, setDoc, getFirestore, collection, query, where, getDocs, updateDoc } = require("firebase/firestore");
+const { doc, setDoc, getFirestore, collection, query, where, getDocs, updateDoc, serverTimestamp, addDoc } = require("firebase/firestore");
 const { Console } = require('console');
 require('firebase/compat/auth');
 require('firebase/compat/firestore');
@@ -140,7 +140,44 @@ app.post('/webhook', async (req, res) => {
         });
       }
 
+    case 'invoice.finalized':
+      const invoice = event.data.object;
+      console.log("customer", invoice.customer)
+      //Find the customer in the members table, get their memberID and create an object to be appended to the members_activity table. 
 
+      break
+    case 'invoice.payment_failed':
+      const failed_invoice = event.data.object;
+      console.log("failing customer", failed_invoice.customer)
+      getDefaultingCustomer(failed_invoice)
+      break
+
+    case 'invoice.updated':
+      const invoice_updated = event.data.object;
+      console.log("invoice_updated", invoice_updated)
+      if (invoice_updated.amount_paid == 0) {
+        console.log("getting defaulting customer")
+        getDefaultingCustomer(invoice_updated)
+          .then((memberId) => {
+            console.log("worked", memberId)
+          })
+          .catch((error) => {
+            console.log("catch", error)
+          });
+      }
+      else if (invoice_updated.amount_due == 0) {
+        getActiveCustomer(invoice_updated)
+          .then((memberId) => {
+            console.log("worked", memberId)
+          })
+          .catch((error) => {
+            console.log("catch", error)
+          });
+      }
+      else {
+        console.log("else reached", invoice_updated)
+      }
+      break
     default:
       console.log('Unknown event type: ' + event.type)
   }
@@ -149,6 +186,105 @@ app.post('/webhook', async (req, res) => {
 
 })
 
+async function getDefaultingCustomer(invoice) {
+  const customer = invoice.customer;
+
+  try {
+    // Reference to your Firestore collection
+    const membersCollection = collection(db, 'members');
+
+    // Create a Firestore query to find the member with a matching customer value
+    const q = query(membersCollection, where('customer', '==', customer));
+
+    // Execute the query and get the results
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      console.log('No matching document found');
+      return null; // Handle the case where no matching document is found
+    }
+
+    // Assuming there's only one matching document (if multiple, you can loop through querySnapshot.docs)
+    const matchingDoc = querySnapshot.docs[0];
+
+    // Retrieve the memberId from the matching document
+    const memberId = matchingDoc.id;
+
+    console.log('Found matching document with memberId:', memberId);
+
+    // Create a new document in the "members_activity" collection with the desired structure
+    const newDocumentData = {
+      status: 'defaulting',
+      memberId: matchingDoc.data().memberId,
+      membership_type: matchingDoc.data().membership,
+      updatedAt: serverTimestamp() // Current timestamp
+    };
+
+    // Reference to the Firestore collection "members_activity" where you want to create the new document
+    const activityCollection = collection(db, 'membership_activity');
+
+    // Add the new document to the "members_activity" collection
+    await addDoc(activityCollection, newDocumentData);
+
+    console.log('New document created in members_activity collection');
+
+    return memberId;
+  } catch (error) {
+    console.error('Error retrieving or creating document in Firestore:', error);
+    // Handle the error as needed
+    throw error;
+  }
+}
+
+async function getActiveCustomer(invoice) {
+  const customer = invoice.customer;
+
+  try {
+    // Reference to your Firestore collection
+    const membersCollection = collection(db, 'members');
+
+    // Create a Firestore query to find the member with a matching customer value
+    const q = query(membersCollection, where('customer', '==', customer));
+
+    // Execute the query and get the results
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      console.log('No matching document found');
+      return null; // Handle the case where no matching document is found
+    }
+
+    // Assuming there's only one matching document (if multiple, you can loop through querySnapshot.docs)
+    const matchingDoc = querySnapshot.docs[0];
+
+    // Retrieve the memberId from the matching document
+    const memberId = matchingDoc.id;
+
+    console.log('Found matching document with memberId:', memberId);
+
+    // Create a new document in the "members_activity" collection with the desired structure
+    const newDocumentData = {
+      status: 'active',
+      memberId: matchingDoc.data().memberId,
+      membership_type: matchingDoc.data().membership,
+      updatedAt: serverTimestamp() // Current timestamp
+    };
+
+    // Reference to the Firestore collection "members_activity" where you want to create the new document
+    const activityCollection = collection(db, 'membership_activity');
+
+    // Add the new document to the "members_activity" collection
+    await addDoc(activityCollection, newDocumentData);
+
+    console.log('New document created in members_activity collection');
+
+    return memberId;
+  } catch (error) {
+    console.error('Error retrieving or creating document in Firestore:', error);
+    // Handle the error as needed
+    throw error;
+  }
+}
 
 app.post("/prebuiltcheckout", async (req, res) => {
 
@@ -255,42 +391,35 @@ app.post("/event_payment", async (req, res) => {
 
   console.log(req.body)
 
-  const payments = req.body
+  const details = req.body
+  const customerId = details["customerid"]
+  const price = details["stripe_price"]
+  const paymentId = details["paymentid"]
 
-  for (let i = 0; i < payments.length; i++) {
-    const details = payments[i]
-    const customerId = details["customerid"]
-    // const paymentId = customerDetails["paymentid"]
-    // const product = details["product"]
-    const price = details["stripe_price"]
+  console.log("here")
 
-    try {
+  try {
 
-      
-      
+    console.log("here 2")
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: price,
       currency: 'gbp',
       customer: customerId,
-      items: [
-        {
-          price: 'price_1NffzSDQ1Xr1pzwr4eU8EswM', // Use the Price ID associated with the product
-          quantity: 1, // You can adjust the quantity if needed
-        },
-      ],
-      // billing_address_collection: 'auto',
-      // description: `Curve Club Membership (including tax: ${taxAmount} GBP)`,
+      payment_method: paymentId,
+      off_session: true,
+      confirm: true,
     });
 
-      
 
 
-      res.json({ clientSecret: paymentIntent })
-    } catch (err) {
-      // Error code will be authentication_required if authentication is needed
-      console.log('Error code is: ', err.code);
-    }
+
+    res.json({ clientSecret: paymentIntent })
+  } catch (err) {
+    // Error code will be authentication_required if authentication is needed
+    console.log('Error code is: ', err.code);
   }
+
 })
 
 app.post("/setupSubscription", async (req, res) => {
@@ -306,42 +435,42 @@ app.post("/setupSubscription", async (req, res) => {
     const paymentType = customerDetails["paymentType"]
     const membership = customerDetails["membership"]
     var subscriptionType = {
-      "vip_founder" : "price_1NO2luDQ1Xr1pzwr7Y0L8KQi",
-      "founder" : "price_1NR8Y8DQ1Xr1pzwrEkarkW5V",
-      "vip_investor" : "price_1NVrPGDQ1Xr1pzwrxtxRKyeA",
-      "investor" : ""
+      "vip_founder": "price_1NO2luDQ1Xr1pzwr7Y0L8KQi",
+      "founder": "price_1NR8Y8DQ1Xr1pzwrEkarkW5V",
+      "vip_investor": "price_1NVrPGDQ1Xr1pzwrxtxRKyeA",
+      "investor": ""
     }
-   // var subscriptionTypeDiscounted = {
-   //    "vip_founder" : "",
-   //    "founder" : "price_1NT4t7DQ1Xr1pzwr210RuOp0",
-   //    "vip_investor" : "",
-   //    "investor" : ""
-   //  }
+    // var subscriptionTypeDiscounted = {
+    //    "vip_founder" : "",
+    //    "founder" : "price_1NT4t7DQ1Xr1pzwr210RuOp0",
+    //    "vip_investor" : "",
+    //    "investor" : ""
+    //  }
 
 
     try {
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: 2500,
-      currency: 'gbp',
-      customer: customerId,
-      payment_method: paymentId,
-      off_session: true,
-      confirm: true,
-      // billing_address_collection: 'auto',
-      // description: `Curve Club Membership (including tax: ${taxAmount} GBP)`,
-    });
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: 2500,
+        currency: 'gbp',
+        customer: customerId,
+        payment_method: paymentId,
+        off_session: true,
+        confirm: true,
+        // billing_address_collection: 'auto',
+        // description: `Curve Club Membership (including tax: ${taxAmount} GBP)`,
+      });
 
-      
-    const subscription = await stripe.subscriptions.create({
-      customer: customerId,
-      items: [
-        { price: subscriptionType[membership] },
-      ],
-      default_payment_method: paymentId,
-      automatic_tax: { "enabled": true },
-    });
 
-      
+      const subscription = await stripe.subscriptions.create({
+        customer: customerId,
+        items: [
+          { price: subscriptionType[membership] },
+        ],
+        default_payment_method: paymentId,
+        automatic_tax: { "enabled": true },
+      });
+
+
 
 
       res.json({ clientSecret: subscription })
@@ -376,7 +505,7 @@ app.post("/pauseSubscription", async (req, res) => {
     console.error(error);
     res.status(500).send({ error: 'An error occurred while retrieving the subscriptions.' });
   }
-  
+
 })
 
 
