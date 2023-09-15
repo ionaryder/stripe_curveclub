@@ -9,7 +9,7 @@ const bodyParser = require('body-parser')
 
 //FIREBASE
 const { initializeApp } = require("firebase/app");
-const { doc, setDoc, getFirestore, collection, query, where, getDocs, updateDoc, serverTimestamp, addDoc } = require("firebase/firestore");
+const { doc, setDoc, getFirestore, collection, query, where, getDocs, getDoc, updateDoc, serverTimestamp, addDoc } = require("firebase/firestore");
 const { Console } = require('console');
 require('firebase/compat/auth');
 require('firebase/compat/firestore');
@@ -29,6 +29,11 @@ const db = getFirestore(app);
 
 var applicationInformation = {}
 var memberInformation = {}
+
+var claimPassInformation = {}
+
+var currentUser = ""
+var eventid = ""
 
 app.use(
   cors({
@@ -73,12 +78,21 @@ app.post('/webhook', async (req, res) => {
     case 'checkout.session.completed':
       const session = event.data.object;
       console.log("checkout session id: ", session.id)
+
+      if (eventid != "" && currentUser != ""){
+        signUserUp(eventid, currentUser)
+      }
+      else if (claimPassInformation != {}) {
+        claimThePass(claimPassInformation)
+      }
+      
       break;
     case 'payment_intent.created':
       const paymentIntent = event.data.object;
       console.log("PaymentIntent Created: ", paymentIntent.id)
       break;
     case 'setup_intent.succeeded':
+      
       const setupIntent = event.data.object;
       console.log("SetupIntent Created: ", setupIntent.id)
       console.log("Customer: ", setupIntent.customer)
@@ -286,6 +300,76 @@ async function getActiveCustomer(invoice) {
   }
 }
 
+async function signUserUp(event, uid) {
+
+  console.log("the event id", event)
+  console.log("the uid", uid)
+  
+    if (!uid) {
+        return;
+    }
+
+    const eventRef = doc(db, 'events', event);
+    const memberAttendingRef = doc(eventRef, 'membersAttending', uid);
+
+    try {
+        await setDoc(memberAttendingRef, {
+            timestamp: new Date()
+        });
+
+        const membersQuery = query(collection(db, 'members'), where('uid', '==', uid));
+        const querySnapshot = await getDocs(membersQuery);
+
+        if (querySnapshot.empty) {
+            console.log("Member document not found");
+            return;
+        }
+
+        const document = querySnapshot.docs[0];
+        console.log("member document", document.id);
+        const memberRef = doc(db, 'members', document.id);
+
+        const docSnapshot = await getDoc(memberRef);
+        const events = docSnapshot.data().events || [];
+        events.push(event);
+
+        await updateDoc(memberRef, { events });
+        console.log("Member document successfully updated with event id.");
+        console.log("Member successfully added to membersAttending collection.");
+    } catch (error) {
+        console.error("Error:", error);
+    }
+}
+
+async function claimThePass(info) {
+  try {
+    console.log("here is the claim pass info", info);
+
+    // Query the "claim-pass" collection for documents with a matching email
+    const claimPassQuery = query(collection(db, "claim_pass"), where("email", "==", info.email));
+    const querySnapshot = await getDocs(claimPassQuery);
+
+    const eventRef = doc(db, "events", info.eventId);
+    const prospectivesAttendingRef = collection(eventRef, "prospectivesAttending");
+
+    // Use addDoc to add a new document to the collection
+    await addDoc(prospectivesAttendingRef, info);
+      console.log("User data added successfully with ID:", prospectiveAttendingRef.id);
+
+    const claimPassRef = collection(db, "claim_pass");
+
+    // Use addDoc to add a new document to the collection
+    await addDoc(claimPassRef, info);
+      console.log("User data added successfully with ID:", claimPassRef.id);
+
+    console.log("User data added successfully");
+  
+  } catch (error) {
+    console.error("Error adding user data:", error);
+    alert("Error", error);
+  }
+}
+
 app.post("/prebuiltcheckout", async (req, res) => {
 
   console.log("prebuilt checkout hit", req.body)
@@ -339,6 +423,7 @@ app.post("/prebuiltcheckout", async (req, res) => {
 });
 
 app.post("/claimpass_checkout", async (req, res) => {
+  
   const requestData = req.body;
 
   console.log("app info", requestData);
@@ -376,10 +461,97 @@ app.post("/claimpass_checkout", async (req, res) => {
       }],
     });
 
+    claimPassInformation = requestData
+
     res.json({ url: session.url });
   } catch (error) {
     console.error(error);
     res.status(400).send({ error });
+  }
+});
+
+app.post("/member_portal_checkout", async (req, res) => {
+  const requestData = req.body;
+
+  console.log("app info", requestData);
+
+  let directUrl = `https://www.curveclub.xyz/${requestData.page_url}`;
+  let cancelUrl = `https://www.curveclub.xyz/${requestData.page_url}`;
+
+  try {
+
+    // Create a Payment Intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: requestData.stripe_price, // Replace with the amount in cents (e.g., 1000 for $10.00)
+      currency: 'gbp', // Replace with your desired currency code
+      customer: requestData.customerid,
+      payment_method_types: ['card'],
+    });
+
+    // Create a Checkout Session using the Payment Intent
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment',
+      customer: requestData.customerid,
+      payment_intent_data: {
+        setup_future_usage: 'off_session',
+      },
+      success_url: directUrl,
+      cancel_url: cancelUrl,
+      line_items: [{
+        price: requestData.product_id, 
+        quantity: 1,
+      }],
+    });
+
+    eventid = requestData.eventid
+    currentUser = requestData.user
+
+    res.json({ url: session.url });
+  } catch (error) {
+    console.error(error);
+    res.status(400).send({ error });
+  }
+});
+
+app.post("/member_event_checkout", async (req, res) => {
+  const requestData = req.body;
+
+  // Use an existing Customer ID if this is a returning customer.
+  // const customer = await stripe.customers.create();
+
+  try {
+
+    const ephemeralKey = await stripe.ephemeralKeys.create(
+      { customer: requestData["customerid"] },
+      { apiVersion: '2022-08-01' }
+    );
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: requestData["stripe_price"],
+      currency: 'gbp',
+      customer: requestData["customerid"],
+      // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
+      automatic_payment_methods: {
+        enabled: true,
+      },
+    });
+
+    console.log("Response Data:", {
+      paymentIntent: paymentIntent.client_secret,
+      ephemeralKey: ephemeralKey.secret,
+      customer: requestData["customerid"],
+      publishableKey: 'pk_live_51LhavMDQ1Xr1pzwrLA1p3fl5jPRLwSv0Qjlp0MkOp4c1oqeap2OAl1T8Yhp4ZJxRcOTWh7OJzUcb5tYELOuGpP2100CoWFvs0j'
+    });
+
+    res.json({
+      paymentIntent: paymentIntent.client_secret,
+      ephemeralKey: ephemeralKey.secret,
+      customer: requestData["customerid"],
+      publishableKey: 'pk_live_51LhavMDQ1Xr1pzwrLA1p3fl5jPRLwSv0Qjlp0MkOp4c1oqeap2OAl1T8Yhp4ZJxRcOTWh7OJzUcb5tYELOuGpP2100CoWFvs0j'
+    });
+  } catch (error) {
+    console.error("An error occurred:", error);
+    res.status(500).send({ error: "An error occurred" });
   }
 });
 
