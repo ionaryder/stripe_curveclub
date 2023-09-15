@@ -366,7 +366,7 @@ async function claimThePass(info) {
   
   } catch (error) {
     console.error("Error adding user data:", error);
-    alert("Error", error);
+    // alert("Error", error);
   }
 }
 
