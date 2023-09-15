@@ -658,7 +658,7 @@ app.post("/setupSubscription", async (req, res) => {
       "vip_founder": "price_1NO2luDQ1Xr1pzwr7Y0L8KQi",
       "founder": "price_1NR8Y8DQ1Xr1pzwrEkarkW5V",
       "vip_investor": "price_1NVrPGDQ1Xr1pzwrxtxRKyeA",
-      "investor": ""
+      "investor": "price_1NqcpbDQ1Xr1pzwrDVurGa1p"
     }
     // var subscriptionTypeDiscounted = {
     //    "vip_founder" : "",
