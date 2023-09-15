@@ -345,24 +345,28 @@ async function claimThePass(info) {
   try {
     console.log("here is the claim pass info", info);
 
-    // Query the "claim-pass" collection for documents with a matching email
-    const claimPassQuery = query(collection(db, "claim_pass"), where("email", "==", info.email));
-    const querySnapshot = await getDocs(claimPassQuery);
+    // Check if info.email is defined before making the query
+    if (info.email) {
+      // Query the "claim-pass" collection for documents with a matching email
+      const claimPassQuery = query(collection(db, "claim_pass"), where("email", "==", info.email));
+      const querySnapshot = await getDocs(claimPassQuery);
+    
 
     const eventRef = doc(db, "events", info.eventId);
     const prospectivesAttendingRef = collection(eventRef, "prospectivesAttending");
 
     // Use addDoc to add a new document to the collection
     await addDoc(prospectivesAttendingRef, info);
-      console.log("User data added successfully with ID:", prospectiveAttendingRef.id);
+    console.log("User data added successfully with ID:", prospectiveAttendingRef.id);
 
     const claimPassRef = collection(db, "claim_pass");
 
     // Use addDoc to add a new document to the collection
     await addDoc(claimPassRef, info);
-      console.log("User data added successfully with ID:", claimPassRef.id);
+    console.log("User data added successfully with ID:", claimPassRef.id);
 
     console.log("User data added successfully");
+      }
   
   } catch (error) {
     console.error("Error adding user data:", error);
