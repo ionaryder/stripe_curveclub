@@ -114,8 +114,8 @@ app.post('/webhook', async (req, res) => {
       }
       else {
         applicationInformation.issue = "We couldn't find the applicationInformation"
-        await setDoc(applicationReference, applicationInformation);
-        applicationInformation = {}
+        // await setDoc(applicationReference, applicationInformation);
+        // applicationInformation = {}
       }
 
       break;
@@ -350,29 +350,36 @@ async function claimThePass(info) {
       // Query the "claim-pass" collection for documents with a matching email
       const claimPassQuery = query(collection(db, "claim_pass"), where("email", "==", info.email));
       const querySnapshot = await getDocs(claimPassQuery);
-    
 
-    const eventRef = doc(db, "events", info.eventId);
-    const prospectivesAttendingRef = collection(eventRef, "prospectivesAttending");
+      if (querySnapshot.docs.length > 0) {
+        // If a document with the same email exists, you might want to handle this case.
+        // You can either update the existing document or do something else.
+        console.log("Document with the same email already exists:", querySnapshot.docs[0].id);
+      } else {
+        const eventRef = doc(db, "events", info.eventId);
+        const prospectivesAttendingRef = collection(eventRef, "prospectivesAttending");
 
-    // Use addDoc to add a new document to the collection
-    await addDoc(prospectivesAttendingRef, info);
-    console.log("User data added successfully with ID:", prospectiveAttendingRef.id);
+        // Use addDoc to add a new document to the collection
+        const prospectiveAttendingDoc = await addDoc(prospectivesAttendingRef, info);
+        console.log("User data added successfully to 'prospectivesAttending' with ID:", prospectiveAttendingDoc.id);
 
-    const claimPassRef = collection(db, "claim_pass");
+        const claimPassRef = collection(db, "claim_pass");
 
-    // Use addDoc to add a new document to the collection
-    await addDoc(claimPassRef, info);
-    console.log("User data added successfully with ID:", claimPassRef.id);
+        // Use addDoc to add a new document to the "claim_pass" collection
+        const claimPassDoc = await addDoc(claimPassRef, info);
+        console.log("User data added successfully to 'claim_pass' with ID:", claimPassDoc.id);
 
-    console.log("User data added successfully");
+        console.log("User data added successfully");
       }
-  
+    } else {
+      console.log("info.email is not defined. Cannot proceed.");
+    }
   } catch (error) {
     console.error("Error adding user data:", error);
-    // alert("Error", error);
+    // You can add additional error handling here, such as showing an alert.
   }
 }
+
 
 app.post("/prebuiltcheckout", async (req, res) => {
 
@@ -607,14 +614,12 @@ app.post("/monthlyCharge", async (req, res) => {
 
 app.post("/event_payment", async (req, res) => {
 
-  console.log(req.body)
 
   const details = req.body
   const customerId = details["customerid"]
   const price = details["stripe_price"]
   const paymentId = details["paymentid"]
 
-  console.log("here")
 
   try {
 
