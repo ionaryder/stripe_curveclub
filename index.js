@@ -360,14 +360,14 @@ async function claimThePass(info) {
         const prospectivesAttendingRef = collection(eventRef, "prospectivesAttending");
 
         // Use addDoc to add a new document to the collection
-        const prospectiveAttendingDoc = await addDoc(prospectivesAttendingRef, info);
-        console.log("User data added successfully to 'prospectivesAttending' with ID:", prospectiveAttendingDoc.id);
+await addDoc(prospectivesAttendingRef, info);
+console.log("User data added successfully with ID:", prospectivesAttendingRef.id);
 
         const claimPassRef = collection(db, "claim_pass");
 
         // Use addDoc to add a new document to the "claim_pass" collection
-        const claimPassDoc = await addDoc(claimPassRef, info);
-        console.log("User data added successfully to 'claim_pass' with ID:", claimPassDoc.id);
+        await addDoc(claimPassRef, info);
+        console.log("User data added successfully to 'claim_pass' with ID:", claimPassRef.id);
 
         console.log("User data added successfully");
       }
