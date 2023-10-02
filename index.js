@@ -179,7 +179,7 @@ app.post('/webhook', async (req, res) => {
             console.log("catch", error)
           });
       }
-      else if (invoice_updated.amount_due == 0) {
+      else if (invoice_updated.amount_remaining == 0) {
         getActiveCustomer(invoice_updated)
           .then((memberId) => {
             console.log("worked", memberId)
