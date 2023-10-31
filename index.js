@@ -15,7 +15,7 @@ require('firebase/compat/auth');
 require('firebase/compat/firestore');
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDrkrg6O5A2V_1uk9fMiUDJOascZcfvUBk",
+  apiKey: process.env.firebase_apikey,
   authDomain: "curveclub-68421.firebaseapp.com",
   projectId: "curveclub-68421",
   storageBucket: "curveclub-68421.appspot.com",
@@ -79,20 +79,20 @@ app.post('/webhook', async (req, res) => {
       const session = event.data.object;
       console.log("checkout session id: ", session.id)
 
-      if (eventid != "" && currentUser != ""){
+      if (eventid != "" && currentUser != "") {
         signUserUp(eventid, currentUser)
       }
       else if (claimPassInformation != {}) {
         claimThePass(claimPassInformation)
       }
-      
+
       break;
     case 'payment_intent.created':
       const paymentIntent = event.data.object;
       console.log("PaymentIntent Created: ", paymentIntent.id)
       break;
     case 'setup_intent.succeeded':
-      
+
       const setupIntent = event.data.object;
       console.log("SetupIntent Created: ", setupIntent.id)
       console.log("Customer: ", setupIntent.customer)
@@ -304,41 +304,41 @@ async function signUserUp(event, uid) {
 
   console.log("the event id", event)
   console.log("the uid", uid)
-  
-    if (!uid) {
-        return;
+
+  if (!uid) {
+    return;
+  }
+
+  const eventRef = doc(db, 'events', event);
+  const memberAttendingRef = doc(eventRef, 'membersAttending', uid);
+
+  try {
+    await setDoc(memberAttendingRef, {
+      timestamp: new Date()
+    });
+
+    const membersQuery = query(collection(db, 'members'), where('uid', '==', uid));
+    const querySnapshot = await getDocs(membersQuery);
+
+    if (querySnapshot.empty) {
+      console.log("Member document not found");
+      return;
     }
 
-    const eventRef = doc(db, 'events', event);
-    const memberAttendingRef = doc(eventRef, 'membersAttending', uid);
+    const document = querySnapshot.docs[0];
+    console.log("member document", document.id);
+    const memberRef = doc(db, 'members', document.id);
 
-    try {
-        await setDoc(memberAttendingRef, {
-            timestamp: new Date()
-        });
+    const docSnapshot = await getDoc(memberRef);
+    const events = docSnapshot.data().events || [];
+    events.push(event);
 
-        const membersQuery = query(collection(db, 'members'), where('uid', '==', uid));
-        const querySnapshot = await getDocs(membersQuery);
-
-        if (querySnapshot.empty) {
-            console.log("Member document not found");
-            return;
-        }
-
-        const document = querySnapshot.docs[0];
-        console.log("member document", document.id);
-        const memberRef = doc(db, 'members', document.id);
-
-        const docSnapshot = await getDoc(memberRef);
-        const events = docSnapshot.data().events || [];
-        events.push(event);
-
-        await updateDoc(memberRef, { events });
-        console.log("Member document successfully updated with event id.");
-        console.log("Member successfully added to membersAttending collection.");
-    } catch (error) {
-        console.error("Error:", error);
-    }
+    await updateDoc(memberRef, { events });
+    console.log("Member document successfully updated with event id.");
+    console.log("Member successfully added to membersAttending collection.");
+  } catch (error) {
+    console.error("Error:", error);
+  }
 }
 
 async function claimThePass(info) {
@@ -360,8 +360,8 @@ async function claimThePass(info) {
         const prospectivesAttendingRef = collection(eventRef, "prospectivesAttending");
 
         // Use addDoc to add a new document to the collection
-await addDoc(prospectivesAttendingRef, info);
-console.log("User data added successfully with ID:", prospectivesAttendingRef.id);
+        await addDoc(prospectivesAttendingRef, info);
+        console.log("User data added successfully with ID:", prospectivesAttendingRef.id);
 
         const claimPassRef = collection(db, "claim_pass");
 
@@ -434,7 +434,7 @@ app.post("/prebuiltcheckout", async (req, res) => {
 });
 
 app.post("/claimpass_checkout", async (req, res) => {
-  
+
   const requestData = req.body;
 
   console.log("app info", requestData);
@@ -510,7 +510,7 @@ app.post("/member_portal_checkout", async (req, res) => {
       success_url: directUrl,
       cancel_url: cancelUrl,
       line_items: [{
-        price: requestData.product_id, 
+        price: requestData.product_id,
         quantity: 1,
       }],
     });
