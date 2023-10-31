@@ -660,10 +660,10 @@ app.post("/setupSubscription", async (req, res) => {
     const paymentType = customerDetails["paymentType"]
     const membership = customerDetails["membership"]
     var subscriptionType = {
-      "vip_founder": "price_1NO2luDQ1Xr1pzwr7Y0L8KQi",
-      "founder": "price_1NR8Y8DQ1Xr1pzwrEkarkW5V",
-      "vip_investor": "price_1NVrPGDQ1Xr1pzwrxtxRKyeA",
-      "investor": "price_1NqcpbDQ1Xr1pzwrDVurGa1p"
+      "vip_founder": "price_1O7HklDQ1Xr1pzwrWaL9VPaP",
+      "founder": "price_1O7HqRDQ1Xr1pzwrqtg3ETtJ",
+      "vip_investor": "price_1O7HoyDQ1Xr1pzwrX3uUx42I",
+      "investor": "price_1O7Hq0DQ1Xr1pzwrFxtEmjaQ"
     }
     // var subscriptionTypeDiscounted = {
     //    "vip_founder" : "",
