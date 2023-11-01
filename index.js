@@ -5,6 +5,8 @@ const app = express();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY_LIVE);
 const { resolve } = require('path')
 const bodyParser = require('body-parser')
+const SSE = require('express-sse');
+const sse = new SSE();
 
 
 //FIREBASE
@@ -47,6 +49,12 @@ app.use(
 app.options('*', cors());  // enable pre-flight
 app.use(bodyParser.json())
 
+// app.get('/events', sse.init);
+
+app.get('/events', (req, res) => {
+  console.log('Client connected to /events');
+  sse.init(req, res);
+});
 
 app.get('/', (req, res) => {
   res.send('Hello Express app!');
@@ -380,6 +388,109 @@ async function claimThePass(info) {
   }
 }
 
+app.post("/application-checkout", async (req, res) => {
+
+  console.log("app checkout hit", req.body)
+  const request = req.body
+  const applicationData = request.data
+  const createdAt = applicationData.createdAt
+  // console.log(applicationInformation.data)
+  const fields = applicationData.fields
+  console.log(fields)
+
+
+  let result = {};
+  let currentValue = null;
+
+  for (let field of fields) {
+      if (field.type === 'DROPDOWN' && field.value) {
+          // Lookup the text from the options array using the value
+          let optionText = field.options.find(option => option.id === field.value[0]).text;
+          currentValue = optionText; // Removed array brackets
+      } else if (field.type === 'MULTI_SELECT' && field.value) {
+          // Lookup the text for each value in the array
+          let optionTexts = field.value.map(val => {
+              return field.options.find(option => option.id === val).text;
+          });
+          currentValue = optionTexts; // Kept as an array since it can have multiple values
+      } else if (field.type !== 'HIDDEN_FIELDS' && field.value) {
+          currentValue = field.value;  // Removed array brackets
+      } else if (field.type === 'HIDDEN_FIELDS' && currentValue) { // Modified the check for currentValue
+          result[field.label] = currentValue;
+          currentValue = null;  // Set to null for clarity 
+      }
+  }
+
+
+  if (result.membership == "VIP Founder"){
+    result.membership = "vip_founder"
+  }
+  else if (result.membership == "Founder Online & Events"){
+      result.membership = "founder"
+  } 
+  else if (result.membership == "VIP Investor"){
+    result.membership = "vip_investor"
+  }
+  else if (result.membership == "Investor Online & Events"){
+    result.membership = "investor"
+  }
+
+  result.createdAt = createdAt;
+  result.clubhouse = "oldstreet";
+  result.approved = false;
+  result.freeMembership = false;
+
+  console.log("the result", result);
+
+  applicationInformation = result
+
+  // console.log("app info", applicationInformation)
+
+  let directUrl = ""
+  let cancelUrl = ""
+
+  if (applicationInformation.firstname != undefined && applicationInformation.clubhouse != undefined) {
+
+    directUrl = "https://www.curve.club/application_submitted"
+    cancelUrl = "https://www.curve.club/application-page"
+
+  }
+
+  else {
+
+    directUrl = "https://www.curve.club/signupcomplete"
+    cancelUrl = "https://www.curve.club/dinner-registration"
+
+  }
+
+  try {
+    // const customer = await stripe.customers.create(); //add email
+
+    const customer = await stripe.customers.create({
+      email: applicationInformation.email // replace with the customer's email
+    });
+
+    console.log("testing", applicationInformation.email)
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'setup',
+      customer: customer.id,
+      success_url: directUrl,
+      cancel_url: cancelUrl,
+    });
+
+
+    console.log("just before sending", session.url)
+    sse.send(session.url);
+    res.json({ url: session.url })
+    // return stripe.redirectToCheckout({ sessionId: session.id });
+    // res.send({ customer, session });
+  } catch (error) {
+    console.log(error)
+    res.status(400).send({ error });
+  }
+});
 
 app.post("/prebuiltcheckout", async (req, res) => {
 
