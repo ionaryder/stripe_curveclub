@@ -49,12 +49,20 @@ app.use(
 app.options('*', cors());  // enable pre-flight
 app.use(bodyParser.json())
 
-// app.get('/events', sse.init);
+
+let clients = {};
 
 app.get('/events', (req, res) => {
+  let clientId = req.query.clientId;
   console.log('Client connected to /events');
   sse.init(req, res);
+   clients[clientId] = res;
+  // Handle client disconnects...
+  req.on("close", () => {
+    delete clients[clientId];
+  });
 });
+
 
 app.get('/', (req, res) => {
   res.send('Hello Express app!');
@@ -480,10 +488,21 @@ app.post("/application-checkout", async (req, res) => {
       cancel_url: cancelUrl,
     });
 
+    // Retrieve the SSE connection for the client that sent this form
+    let clientRes = clients[req.body.clientId];
 
-    console.log("just before sending", session.url)
-    sse.send(session.url);
-    res.json({ url: session.url })
+    // If the SSE connection exists, send the session.url to that specific client
+    if (clientRes) {
+      clientRes.write(`data: ${session.url}\n\n`);
+    }
+
+    console.log("just before sending", session.url);
+
+    // This line sends the session.url to ALL connected SSE clients.
+    // You might want to remove or comment it out if you only want the URL to go to the specific client.
+    // sse.send(session.url); 
+
+    res.json({ url: session.url }); 
     // return stripe.redirectToCheckout({ sessionId: session.id });
     // res.send({ customer, session });
   } catch (error) {
@@ -491,6 +510,12 @@ app.post("/application-checkout", async (req, res) => {
     res.status(400).send({ error });
   }
 });
+
+
+
+
+
+
 
 app.post("/prebuiltcheckout", async (req, res) => {
 
