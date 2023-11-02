@@ -177,7 +177,7 @@ app.post('/webhook', async (req, res) => {
     case 'invoice.updated':
       const invoice_updated = event.data.object;
       console.log("invoice_updated", invoice_updated)
-      if (invoice_updated.amount_paid == 0) {
+      if (invoice_updated.amount_paid == 0 && invoice_updated.status != "void") {
         console.log("getting defaulting customer")
         getDefaultingCustomer(invoice_updated)
           .then((memberId) => {
