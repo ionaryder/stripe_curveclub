@@ -846,7 +846,7 @@ app.post("/setupSubscription", async (req, res) => {
   }
 })
 
-app.post("/pauseSubscription", async (req, res) => {
+app.post("/cancelSubscription", async (req, res) => {
 
   console.log("check", req.body)
 
