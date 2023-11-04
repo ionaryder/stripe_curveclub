@@ -601,7 +601,7 @@ app.post("/add-customer", async (req, res) => {
       payment_method_types: ['card'],
       mode: 'setup',
       customer: customer.id,
-      success_url: "https://www.curve.club/application_submitted",
+      success_url: "https://www.curve.club/application-submitted",
       cancel_url: "https://www.curve.club/application-page",
     });
 
@@ -626,7 +626,7 @@ app.post("/prebuiltcheckout", async (req, res) => {
 
   if (applicationInformation.firstname != undefined && applicationInformation.clubhouse != undefined) {
 
-    directUrl = "https://www.curve.club/application_submitted"
+    directUrl = "https://www.curve.club/application-submitted"
     cancelUrl = "https://www.curve.club/application-page"
 
   }
