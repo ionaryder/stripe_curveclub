@@ -602,7 +602,7 @@ app.post("/add-customer", async (req, res) => {
       mode: 'setup',
       customer: customer.id,
       success_url: "https://www.curve.club/application-submitted",
-      cancel_url: "https://www.curve.club/application-page",
+      cancel_url: "https://apply.curve.club",
     });
 
 
@@ -627,7 +627,7 @@ app.post("/prebuiltcheckout", async (req, res) => {
   if (applicationInformation.firstname != undefined && applicationInformation.clubhouse != undefined) {
 
     directUrl = "https://www.curve.club/application-submitted"
-    cancelUrl = "https://www.curve.club/application-page"
+    cancelUrl = "https://apply.curve.club"
 
   }
 
