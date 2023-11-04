@@ -577,8 +577,8 @@ app.post("/application-checkout", async (req, res) => {
 
     await setDoc(applicationReference, result);
 
-  
-    res.send(200);
+    res.json({ result: result });
+     // res.status(200).send("success");
   } catch (error) {
     console.log(error)
     res.status(400).send({ error });
