@@ -50,18 +50,38 @@ app.options('*', cors());  // enable pre-flight
 app.use(bodyParser.json())
 
 
-let clients = {};
+const clients = {}; // This holds the SSE connections keyed by a unique client ID
 
+// SSE Setup
 app.get('/events', (req, res) => {
-  let clientId = req.query.clientId;
-  console.log('Client connected to /events');
-  sse.init(req, res);
-   clients[clientId] = res;
-  // Handle client disconnects...
-  req.on("close", () => {
+  console.log(req)
+  const clientId = req.query.clientId; // You'll need to generate and send this from the client
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders(); // Flush the headers to establish SSE with the client
+
+  // Save the SSE connection in your clients object
+  clients[clientId] = res;
+
+  // When the client closes the connection, remove it from the clients object
+  req.on('close', () => {
     delete clients[clientId];
   });
 });
+
+// The part where you send a message to a specific client
+const sendToClient = (clientId, data) => {
+  console.log("sending to client")
+  const client = clients[clientId];
+  if (client) {
+    console.log("found client", data)
+    client.write(`data: ${JSON.stringify(data)}\n\n`);
+  }
+  else {
+    console.log("no client found")
+  }
+};
 
 
 app.get('/', (req, res) => {
@@ -90,10 +110,11 @@ app.post('/webhook', async (req, res) => {
   switch (event.type) {
     case 'customer.created':
       const customer = event.data.object;
-      console.log("customer created", applicationInformation)
+      // console.log("customer created", applicationInformation)
     case 'checkout.session.completed':
       const session = event.data.object;
-      console.log("checkout session id: ", session.id)
+      // console.log("checkout session id: ", session)
+      
 
       if (eventid != "" && currentUser != "") {
         signUserUp(eventid, currentUser)
@@ -103,23 +124,36 @@ app.post('/webhook', async (req, res) => {
       }
 
       break;
+    case 'payment_method.attached':
+      const payment_method = event.data.object;
+      console.log("payment_method: ", payment_method.id, payment_method.customer)
+      const billingDetails = payment_method.billing_details;
+
+      addStripeDetailsToApplicant(payment_method.id, payment_method.customer, billingDetails.email)
+      break;
+    case 'payment_intent.succeeded':
+      break;
     case 'payment_intent.created':
       const paymentIntent = event.data.object;
       console.log("PaymentIntent Created: ", paymentIntent.id)
       break;
+    case 'setup_intent.created' :
+      console.log("Setup Intent Created: ", event.data.object)
+      
     case 'setup_intent.succeeded':
 
       const setupIntent = event.data.object;
+      console.log("succeeded sui", setupIntent)
       console.log("SetupIntent Created: ", setupIntent.id)
       console.log("Customer: ", setupIntent.customer)
       console.log("Payment Method", setupIntent.payment_method)
       applicationInformation.customer = setupIntent.customer
-      applicationInformation.payment_method = setupIntent.payment_method
+      // applicationInformation.payment_method = setupIntent.payment_method
       applicationInformation.onboarded = false
 
       applicationInformation.freeMembership = false
-      console.log("Applicant", applicationInformation)
-      console.log("name", applicationInformation.name)
+      // console.log("Applicant", applicationInformation)
+      
       if (applicationInformation.firstname != undefined) {
         await setDoc(applicationReference, applicationInformation);
         applicationInformation = {}
@@ -172,7 +206,7 @@ app.post('/webhook', async (req, res) => {
 
     case 'invoice.finalized':
       const invoice = event.data.object;
-      console.log("customer", invoice.customer)
+      console.log("customer", invoice.customer, "at invoice finalized")
       //Find the customer in the members table, get their memberID and create an object to be appended to the members_activity table. 
 
       break
@@ -215,6 +249,64 @@ app.post('/webhook', async (req, res) => {
   res.send({ message: 'success' })
 
 })
+
+async function addStripeDetailsToApplicant(paymentId, customerId, email) {
+  const applicationsCollection = collection(db, 'applications');
+
+  // Create a Firestore query to find the applicant with a matching email
+  const q = query(applicationsCollection, where('email', '==', email));
+
+  // Execute the query and get the results
+  const querySnapshot = await getDocs(q);
+
+  // Check if the applicants were found
+  if (querySnapshot.empty) {
+    console.log(`No matching applicants found for email: ${email}`);
+    return;
+  }
+
+  // Loop through the matching applicants (although there should be only one document for a unique email)
+  let updatePromises = [];
+  querySnapshot.forEach((doc) => {
+    // doc.data() is never undefined for query doc snapshots
+    console.log(doc.id, ' => ', doc.data());
+
+    // Prepare the update promise to update the document
+    const docRef = doc.ref; // Get a reference to the document
+    updatePromises.push(updateDoc(docRef, {
+      payment_method: paymentId,
+      customer: customerId,
+      stripe_complete: true
+    }));
+  });
+
+  // Execute all the update promises
+  try {
+    await Promise.all(updatePromises);
+    console.log(`Updated applicants with email: ${email}`);
+  } catch (error) {
+    console.error("Error updating documents: ", error);
+  }
+}
+
+
+async function getPaymentIntent(paymentIntentId) {
+  try {
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    if (paymentIntent && paymentIntent.payment_method) {
+      console.log(`Payment method associated with the PaymentIntent: ${paymentIntent.payment_method}`);
+      return paymentIntent.payment_method;
+    } else {
+      console.log('No payment method associated with the PaymentIntent.');
+      return null;
+    }
+
+  } catch (error) {
+    console.error('Error fetching PaymentIntent:', error);
+    return null; // return null in case of error
+  }
+}
 
 async function getDefaultingCustomer(invoice) {
   const customer = invoice.customer;
@@ -398,10 +490,13 @@ async function claimThePass(info) {
 
 app.post("/application-checkout", async (req, res) => {
 
+   const applicationReference = doc(collection(db, "applications"));
+
   console.log("app checkout hit", req.body)
   const request = req.body
   const applicationData = request.data
   const createdAt = applicationData.createdAt
+  const date = new Date().toLocaleString()
   // console.log(applicationInformation.data)
   const fields = applicationData.fields
   console.log(fields)
@@ -415,18 +510,42 @@ app.post("/application-checkout", async (req, res) => {
           // Lookup the text from the options array using the value
           let optionText = field.options.find(option => option.id === field.value[0]).text;
           currentValue = optionText; // Removed array brackets
-      } else if (field.type === 'MULTI_SELECT' && field.value) {
+      } 
+      else if (field.type === 'MULTI_SELECT' && field.value) {
           // Lookup the text for each value in the array
           let optionTexts = field.value.map(val => {
               return field.options.find(option => option.id === val).text;
           });
           currentValue = optionTexts; // Kept as an array since it can have multiple values
-      } else if (field.type !== 'HIDDEN_FIELDS' && field.value) {
+      } 
+        else if (field.label === 'Payment (link)') {
+
+          console.log("here", field.value)
+
+          const url = field.value;
+          const regex = /\/(pi_[a-zA-Z0-9]+)(\/|$)/;
+          const match = url.match(regex);
+
+          if (match && match[1]) {
+            console.log("here 1")
+              const paymentIntentFullString = match[1];
+              console.log(`PaymentIntent String: ${paymentIntentFullString}`);
+              result["payment_intent"] = paymentIntentFullString;
+          } else {
+            console.log("here 2")
+              console.log('PaymentIntent String not found in the provided URL.');
+              result["payment_intent"] = "Not found";
+          }
+
+        }
+      else if (field.type !== 'HIDDEN_FIELDS' && field.value) {
           currentValue = field.value;  // Removed array brackets
-      } else if (field.type === 'HIDDEN_FIELDS' && currentValue) { // Modified the check for currentValue
+      } 
+      else if (field.type === 'HIDDEN_FIELDS' && currentValue) { // Modified the check for currentValue
           result[field.label] = currentValue;
           currentValue = null;  // Set to null for clarity 
       }
+    
   }
 
 
@@ -447,64 +566,19 @@ app.post("/application-checkout", async (req, res) => {
   result.clubhouse = "oldstreet";
   result.approved = false;
   result.freeMembership = false;
+  result.stripe_complete = false;
+  result.date = date;
+  result.paymentMethod = "CARD"
+  result.paymentType = "monthly"
 
   console.log("the result", result);
 
-  applicationInformation = result
-
-  // console.log("app info", applicationInformation)
-
-  let directUrl = ""
-  let cancelUrl = ""
-
-  if (applicationInformation.firstname != undefined && applicationInformation.clubhouse != undefined) {
-
-    directUrl = "https://www.curve.club/application_submitted"
-    cancelUrl = "https://www.curve.club/application-page"
-
-  }
-
-  else {
-
-    directUrl = "https://www.curve.club/signupcomplete"
-    cancelUrl = "https://www.curve.club/dinner-registration"
-
-  }
-
   try {
-    // const customer = await stripe.customers.create(); //add email
 
-    const customer = await stripe.customers.create({
-      email: applicationInformation.email // replace with the customer's email
-    });
+    await setDoc(applicationReference, result);
 
-    console.log("testing", applicationInformation.email)
-
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode: 'setup',
-      customer: customer.id,
-      success_url: directUrl,
-      cancel_url: cancelUrl,
-    });
-
-    // Retrieve the SSE connection for the client that sent this form
-    let clientRes = clients[req.body.clientId];
-
-    // If the SSE connection exists, send the session.url to that specific client
-    if (clientRes) {
-      clientRes.write(`data: ${session.url}\n\n`);
-    }
-
-    console.log("just before sending", session.url);
-
-    // This line sends the session.url to ALL connected SSE clients.
-    // You might want to remove or comment it out if you only want the URL to go to the specific client.
-    // sse.send(session.url); 
-
-    res.json({ url: session.url }); 
-    // return stripe.redirectToCheckout({ sessionId: session.id });
-    // res.send({ customer, session });
+  
+    res.send(200);
   } catch (error) {
     console.log(error)
     res.status(400).send({ error });
@@ -512,7 +586,30 @@ app.post("/application-checkout", async (req, res) => {
 });
 
 
+app.post("/add-customer", async (req, res) => {
+  console.log("in add-customer", req.body)
+  const request = req.body
+  const email = request.email
 
+   const customer = await stripe.customers.create({
+      email: email // replace with the customer's email
+    });
+
+    const customerId = customer.id
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'setup',
+      customer: customer.id,
+      success_url: "https://www.curve.club/application_submitted",
+      cancel_url: "https://www.curve.club/application-page",
+    });
+
+
+    console.log("url", session.url)
+
+    res.json({ url: session.url });
+})
 
 
 
@@ -861,7 +958,34 @@ app.post("/cancelSubscription", async (req, res) => {
 
     // Send the subscription IDs back to the client
     console.log("subscriptions", subscriptions)
-    res.send(subscriptions);
+
+    try {
+      console.log("try", subscriptions.data[0].id);
+
+      const subscription = await stripe.subscriptions.update(
+        subscriptions.data[0].id,
+        {
+          "cancel_at_period_end": true,
+        }
+      );
+
+      console.log("Subscription update successful", subscription);
+
+    } catch (error) {
+      console.error("Error in subscription update:", error);
+      if (error instanceof Stripe.errors.StripeError) {
+        // Handle Stripe errors specifically here
+        console.error("Stripe error:", error.message);
+        throw new Error(`Stripe error: ${error.message}`);
+      } else {
+        // Handle other types of errors
+        console.error("Non-Stripe error:", error);
+        throw new Error(`Error: couldn't cancel subscription. Details: ${error.message}`);
+      }
+    }
+
+    
+    res.status(200).send("Success");
   } catch (error) {
     console.error(error);
     res.status(500).send({ error: 'An error occurred while retrieving the subscriptions.' });
