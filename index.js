@@ -381,24 +381,35 @@ async function getActiveCustomer(invoice) {
 
     // Retrieve the memberId from the matching document
     const memberId = matchingDoc.id;
+    const status = matchingDoc.data().currentMembershipStatus;
 
     console.log('Found matching document with memberId:', memberId);
 
     // Create a new document in the "members_activity" collection with the desired structure
-    const newDocumentData = {
-      status: 'active',
-      memberId: matchingDoc.data().memberId,
-      membership_type: matchingDoc.data().membership,
-      updatedAt: serverTimestamp() // Current timestamp
-    };
 
-    // Reference to the Firestore collection "members_activity" where you want to create the new document
-    const activityCollection = collection(db, 'membership_activity');
+    if (status == "active"){
 
-    // Add the new document to the "members_activity" collection
-    await addDoc(activityCollection, newDocumentData);
+      const newDocumentData = {
+        status: 'active',
+        memberId: matchingDoc.data().memberId,
+        membership_type: matchingDoc.data().membership,
+        updatedAt: serverTimestamp() // Current timestamp
+      };
 
-    console.log('New document created in members_activity collection');
+      // Reference to the Firestore collection "members_activity" where you want to create the new document
+      const activityCollection = collection(db, 'membership_activity');
+
+      // Add the new document to the "members_activity" collection
+      await addDoc(activityCollection, newDocumentData);
+
+      console.log('New document created in members_activity collection');
+      
+    }
+    else {
+      console.log("this user has cancelled/paused their membership")
+    }
+    
+
 
     return memberId;
   } catch (error) {
