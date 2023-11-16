@@ -549,18 +549,16 @@ app.post("/application-checkout", async (req, res) => {
   }
 
 
-  if (result.membership == "VIP Founder"){
-    result.membership = "vip_founder"
+  if (result.membership == "Full Membership"){
+    result.membership = "full_membership"
   }
-  else if (result.membership == "Founder Online & Events"){
-      result.membership = "founder"
+  else if (result.membership == "Online Membership"){
+      result.membership = "online_membership"
   } 
-  else if (result.membership == "VIP Investor"){
-    result.membership = "vip_investor"
+  else {
+    result.membership = "update"
   }
-  else if (result.membership == "Investor Online & Events"){
-    result.membership = "investor"
-  }
+
 
   result.createdAt = createdAt;
   result.clubhouse = "oldstreet";
