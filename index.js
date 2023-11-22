@@ -573,6 +573,13 @@ app.post("/application-checkout", async (req, res) => {
       result.membership = "weekend_membership"
   } 
 
+  if (result.professionalLevel == "Angel Investor" || result.professionalLevel == "VC" || result.professionalLevel == "Private Equity"){
+    result.member_zone = "investor"
+  }
+  else {
+     result.member_zone = "entrepreneur"
+  }
+
 
   result.createdAt = createdAt;
   result.clubhouse = "oldstreet";
