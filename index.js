@@ -566,9 +566,12 @@ app.post("/application-checkout", async (req, res) => {
   else if (result.membership == "Online Membership"){
       result.membership = "online_membership"
   } 
-  else {
-    result.membership = "update"
-  }
+  else if (result.membership == "Drop-in Membership"){
+      result.membership = "dropin_membership"
+  } 
+  else if (result.membership == "Weekend Membership"){
+      result.membership = "weekend_membership"
+  } 
 
 
   result.createdAt = createdAt;
