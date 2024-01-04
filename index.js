@@ -559,26 +559,43 @@ app.post("/application-checkout", async (req, res) => {
     
   }
 
-
-  if (result.membership == "Full Membership"){
-    result.membership = "full_membership"
-  }
-  else if (result.membership == "Online Membership"){
-      result.membership = "online_membership"
-  } 
-  else if (result.membership == "Drop-in Membership"){
-      result.membership = "dropin_membership"
-  } 
-  else if (result.membership == "Weekend Membership"){
-      result.membership = "weekend_membership"
-  } 
-
   if (result.professionalLevel == "Angel Investor" || result.professionalLevel == "VC" || result.professionalLevel == "Private Equity"){
     result.member_zone = "investor"
   }
   else {
      result.member_zone = "entrepreneur"
   }
+
+
+  if (result.membership == "Full Membership" && result.member_zone == "investor"){
+    result.membership = "full_membership_investor"
+  }
+  else if (result.membership == "Full Membership" && result.member_zone != "investor"){
+      result.membership = "full_membership"
+    }
+  else if (result.membership == "Online Membership" && result.member_zone == "investor"){
+      result.membership = "online_membership_investor"
+  } 
+  else if (result.membership == "Online Membership" && result.member_zone != "investor"){
+        result.membership = "online_membership"
+  } 
+  else if (result.membership == "Drop-in Membership" && result.member_zone == "investor"){
+      result.membership = "dropin_membership_investor"
+  } 
+  else if (result.membership == "Drop-in Membership" && result.member_zone != "investor"){
+      result.membership = "dropin_membership"
+  } 
+  else if (result.membership == "Drop-in Events" && result.member_zone == "investor"){
+        result.membership = "dropin_events_investor"
+  } 
+  else if (result.membership == "Drop-in Events" && result.member_zone != "investor"){
+        result.membership = "dropin_events"
+  } 
+  else {
+     result.membership = "other"
+  }
+
+
 
 
   result.createdAt = createdAt;
@@ -909,20 +926,37 @@ app.post("/setupSubscription", async (req, res) => {
     const customerDetails = payments[i]
     const customerId = customerDetails["customerid"]
     const paymentId = customerDetails["paymentid"]
-    const paymentType = customerDetails["paymentType"]
+    const paymentType = customerDetails["payment_cadence"]
     const membership = customerDetails["membership"]
-    var subscriptionType = {
-      "vip_founder": "price_1O7HklDQ1Xr1pzwrWaL9VPaP",
-      "founder": "price_1O7HqRDQ1Xr1pzwrqtg3ETtJ",
-      "vip_investor": "price_1O7HoyDQ1Xr1pzwrX3uUx42I",
-      "investor": "price_1O7Hq0DQ1Xr1pzwrFxtEmjaQ"
+    var subscriptionType = {}
+
+    if (paymentType == "monthly") {
+
+      subscriptionType = {
+        "full_membership" : "price_1O7HklDQ1Xr1pzwrWaL9VPaP",
+        "full_membership_investor" : "price_1O7HklDQ1Xr1pzwrWaL9VPaP",
+        "dropin_membership" : "price_1ORz88DQ1Xr1pzwrH8QbCRJm",
+        "dropin_membership_investor" : "price_1ORz88DQ1Xr1pzwrH8QbCRJm",
+        "dropin_events" : "price_1ORz94DQ1Xr1pzwr2cPJUKDX",
+        "dropin_events_investor" : "price_1ORz94DQ1Xr1pzwr2cPJUKDX",
+        "online_membership" : "price_1OH5ODDQ1Xr1pzwrh1agL7A2",
+        "online_membership_investor" : "price_1OH5ODDQ1Xr1pzwrh1agL7A2"
+      }
+
     }
-    // var subscriptionTypeDiscounted = {
-    //    "vip_founder" : "",
-    //    "founder" : "price_1NT4t7DQ1Xr1pzwr210RuOp0",
-    //    "vip_investor" : "",
-    //    "investor" : ""
-    //  }
+    else {
+
+      subscriptionType = {
+        "full_membership" : "price_1ORzEwDQ1Xr1pzwrddiySMf8",
+        "full_membership_investor" : "price_1ORzEwDQ1Xr1pzwrddiySMf8",
+        "dropin_membership" : "price_1ONYEQDQ1Xr1pzwrEDuNuVty",
+        "dropin_membership_investor" : "price_1ONYEQDQ1Xr1pzwrEDuNuVty",
+        "dropin_events" : "price_1ORzAdDQ1Xr1pzwrhklMOssR",
+        "dropin_events_investor" : "price_1ORzAdDQ1Xr1pzwrhklMOssR"
+      }
+      
+    }
+    
 
 
     try {
