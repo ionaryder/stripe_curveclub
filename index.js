@@ -110,11 +110,11 @@ app.post('/webhook', async (req, res) => {
   switch (event.type) {
     case 'customer.created':
       const customer = event.data.object;
-      // console.log("customer created", applicationInformation)
+    // console.log("customer created", applicationInformation)
     case 'checkout.session.completed':
       const session = event.data.object;
       // console.log("checkout session id: ", session)
-      
+
 
       if (eventid != "" && currentUser != "") {
         signUserUp(eventid, currentUser)
@@ -137,9 +137,9 @@ app.post('/webhook', async (req, res) => {
       const paymentIntent = event.data.object;
       console.log("PaymentIntent Created: ", paymentIntent.id)
       break;
-    case 'setup_intent.created' :
+    case 'setup_intent.created':
       console.log("Setup Intent Created: ", event.data.object)
-      
+
     case 'setup_intent.succeeded':
 
       const setupIntent = event.data.object;
@@ -153,7 +153,7 @@ app.post('/webhook', async (req, res) => {
 
       applicationInformation.freeMembership = false
       // console.log("Applicant", applicationInformation)
-      
+
       if (applicationInformation.firstname != undefined) {
         await setDoc(applicationReference, applicationInformation);
         applicationInformation = {}
@@ -387,7 +387,7 @@ async function getActiveCustomer(invoice) {
 
     // Create a new document in the "members_activity" collection with the desired structure
 
-    if (status == "active"){
+    if (status == "active") {
 
       const newDocumentData = {
         status: 'active',
@@ -403,12 +403,12 @@ async function getActiveCustomer(invoice) {
       await addDoc(activityCollection, newDocumentData);
 
       console.log('New document created in members_activity collection');
-      
+
     }
     else {
       console.log("this user has cancelled/paused their membership")
     }
-    
+
 
 
     return memberId;
@@ -501,7 +501,7 @@ async function claimThePass(info) {
 
 app.post("/application-checkout", async (req, res) => {
 
-   const applicationReference = doc(collection(db, "applications"));
+  const applicationReference = doc(collection(db, "applications"));
 
   console.log("app checkout hit", req.body)
   const request = req.body
@@ -517,82 +517,82 @@ app.post("/application-checkout", async (req, res) => {
   let currentValue = null;
 
   for (let field of fields) {
-      if (field.type === 'DROPDOWN' && field.value) {
-          // Lookup the text from the options array using the value
-          let optionText = field.options.find(option => option.id === field.value[0]).text;
-          currentValue = optionText; // Removed array brackets
-      } 
-      else if (field.type === 'MULTI_SELECT' && field.value) {
-          // Lookup the text for each value in the array
-          let optionTexts = field.value.map(val => {
-              return field.options.find(option => option.id === val).text;
-          });
-          currentValue = optionTexts; // Kept as an array since it can have multiple values
-      } 
-        else if (field.label === 'Payment (link)') {
+    if (field.type === 'DROPDOWN' && field.value) {
+      // Lookup the text from the options array using the value
+      let optionText = field.options.find(option => option.id === field.value[0]).text;
+      currentValue = optionText; // Removed array brackets
+    }
+    else if (field.type === 'MULTI_SELECT' && field.value) {
+      // Lookup the text for each value in the array
+      let optionTexts = field.value.map(val => {
+        return field.options.find(option => option.id === val).text;
+      });
+      currentValue = optionTexts; // Kept as an array since it can have multiple values
+    }
+    else if (field.label === 'Payment (link)') {
 
-          console.log("here", field.value)
+      console.log("here", field.value)
 
-          const url = field.value;
-          const regex = /\/(pi_[a-zA-Z0-9]+)(\/|$)/;
-          const match = url.match(regex);
+      const url = field.value;
+      const regex = /\/(pi_[a-zA-Z0-9]+)(\/|$)/;
+      const match = url.match(regex);
 
-          if (match && match[1]) {
-            console.log("here 1")
-              const paymentIntentFullString = match[1];
-              console.log(`PaymentIntent String: ${paymentIntentFullString}`);
-              result["payment_intent"] = paymentIntentFullString;
-          } else {
-            console.log("here 2")
-              console.log('PaymentIntent String not found in the provided URL.');
-              result["payment_intent"] = "Not found";
-          }
-
-        }
-      else if (field.type !== 'HIDDEN_FIELDS' && field.value) {
-          currentValue = field.value;  // Removed array brackets
-      } 
-      else if (field.type === 'HIDDEN_FIELDS' && currentValue) { // Modified the check for currentValue
-          result[field.label] = currentValue;
-          currentValue = null;  // Set to null for clarity 
+      if (match && match[1]) {
+        console.log("here 1")
+        const paymentIntentFullString = match[1];
+        console.log(`PaymentIntent String: ${paymentIntentFullString}`);
+        result["payment_intent"] = paymentIntentFullString;
+      } else {
+        console.log("here 2")
+        console.log('PaymentIntent String not found in the provided URL.');
+        result["payment_intent"] = "Not found";
       }
-    
+
+    }
+    else if (field.type !== 'HIDDEN_FIELDS' && field.value) {
+      currentValue = field.value;  // Removed array brackets
+    }
+    else if (field.type === 'HIDDEN_FIELDS' && currentValue) { // Modified the check for currentValue
+      result[field.label] = currentValue;
+      currentValue = null;  // Set to null for clarity 
+    }
+
   }
 
-  if (result.professionalLevel == "Angel Investor" || result.professionalLevel == "VC" || result.professionalLevel == "Private Equity"){
+  if (result.professionalLevel == "Angel Investor" || result.professionalLevel == "VC" || result.professionalLevel == "Private Equity") {
     result.member_zone = "investor"
   }
   else {
-     result.member_zone = "entrepreneur"
+    result.member_zone = "entrepreneur"
   }
 
 
-  if (result.membership == "Full Membership" && result.member_zone == "investor"){
+  if (result.membership == "Full Membership" && result.member_zone == "investor") {
     result.membership = "full_membership_investor"
   }
-  else if (result.membership == "Full Membership" && result.member_zone != "investor"){
-      result.membership = "full_membership"
-    }
-  else if (result.membership == "Online Membership" && result.member_zone == "investor"){
-      result.membership = "online_membership_investor"
-  } 
-  else if (result.membership == "Online Membership" && result.member_zone != "investor"){
-        result.membership = "online_membership"
-  } 
-  else if (result.membership == "Drop-in Membership" && result.member_zone == "investor"){
-      result.membership = "dropin_membership_investor"
-  } 
-  else if (result.membership == "Drop-in Membership" && result.member_zone != "investor"){
-      result.membership = "dropin_membership"
-  } 
-  else if (result.membership == "Drop-in Events" && result.member_zone == "investor"){
-        result.membership = "dropin_events_investor"
-  } 
-  else if (result.membership == "Drop-in Events" && result.member_zone != "investor"){
-        result.membership = "dropin_events"
-  } 
+  else if (result.membership == "Full Membership" && result.member_zone != "investor") {
+    result.membership = "full_membership"
+  }
+  else if (result.membership == "Online Membership" && result.member_zone == "investor") {
+    result.membership = "online_membership_investor"
+  }
+  else if (result.membership == "Online Membership" && result.member_zone != "investor") {
+    result.membership = "online_membership"
+  }
+  else if (result.membership == "Drop-in Membership" && result.member_zone == "investor") {
+    result.membership = "dropin_membership_investor"
+  }
+  else if (result.membership == "Drop-in Membership" && result.member_zone != "investor") {
+    result.membership = "dropin_membership"
+  }
+  else if (result.membership == "Drop-in Events" && result.member_zone == "investor") {
+    result.membership = "dropin_events_investor"
+  }
+  else if (result.membership == "Drop-in Events" && result.member_zone != "investor") {
+    result.membership = "dropin_events"
+  }
   else {
-     result.membership = "other"
+    result.membership = "other"
   }
 
 
@@ -614,7 +614,7 @@ app.post("/application-checkout", async (req, res) => {
     await setDoc(applicationReference, result);
 
     res.json({ result: result });
-     // res.status(200).send("success");
+    // res.status(200).send("success");
   } catch (error) {
     console.log(error)
     res.status(400).send({ error });
@@ -627,24 +627,24 @@ app.post("/add-customer", async (req, res) => {
   const request = req.body
   const email = request.email
 
-   const customer = await stripe.customers.create({
-      email: email // replace with the customer's email
-    });
+  const customer = await stripe.customers.create({
+    email: email // replace with the customer's email
+  });
 
-    const customerId = customer.id
+  const customerId = customer.id
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode: 'setup',
-      customer: customer.id,
-      success_url: "https://www.curve.club/application-submitted",
-      cancel_url: "https://apply.curve.club",
-    });
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    mode: 'setup',
+    customer: customer.id,
+    success_url: "https://www.curve.club/application-submitted",
+    cancel_url: "https://apply.curve.club",
+  });
 
 
-    console.log("url", session.url)
+  console.log("url", session.url)
 
-    res.json({ url: session.url });
+  res.json({ url: session.url });
 })
 
 
@@ -933,30 +933,30 @@ app.post("/setupSubscription", async (req, res) => {
     if (paymentType == "monthly") {
 
       subscriptionType = {
-        "full_membership" : "price_1O7HklDQ1Xr1pzwrWaL9VPaP",
-        "full_membership_investor" : "price_1O7HklDQ1Xr1pzwrWaL9VPaP",
-        "dropin_membership" : "price_1ORz88DQ1Xr1pzwrH8QbCRJm",
-        "dropin_membership_investor" : "price_1ORz88DQ1Xr1pzwrH8QbCRJm",
-        "dropin_events" : "price_1ORz94DQ1Xr1pzwr2cPJUKDX",
-        "dropin_events_investor" : "price_1ORz94DQ1Xr1pzwr2cPJUKDX",
-        "online_membership" : "price_1OH5ODDQ1Xr1pzwrh1agL7A2",
-        "online_membership_investor" : "price_1OH5ODDQ1Xr1pzwrh1agL7A2"
+        "full_membership": "price_1O7HklDQ1Xr1pzwrWaL9VPaP",
+        "full_membership_investor": "price_1O7HklDQ1Xr1pzwrWaL9VPaP",
+        "dropin_membership": "price_1ORz88DQ1Xr1pzwrH8QbCRJm",
+        "dropin_membership_investor": "price_1ORz88DQ1Xr1pzwrH8QbCRJm",
+        "dropin_events": "price_1ORz94DQ1Xr1pzwr2cPJUKDX",
+        "dropin_events_investor": "price_1ORz94DQ1Xr1pzwr2cPJUKDX",
+        "online_membership": "price_1OH5ODDQ1Xr1pzwrh1agL7A2",
+        "online_membership_investor": "price_1OH5ODDQ1Xr1pzwrh1agL7A2"
       }
 
     }
     else {
 
       subscriptionType = {
-        "full_membership" : "price_1ORzEwDQ1Xr1pzwrddiySMf8",
-        "full_membership_investor" : "price_1ORzEwDQ1Xr1pzwrddiySMf8",
-        "dropin_membership" : "price_1ONYEQDQ1Xr1pzwrEDuNuVty",
-        "dropin_membership_investor" : "price_1ONYEQDQ1Xr1pzwrEDuNuVty",
-        "dropin_events" : "price_1ORzAdDQ1Xr1pzwrhklMOssR",
-        "dropin_events_investor" : "price_1ORzAdDQ1Xr1pzwrhklMOssR"
+        "full_membership": "price_1ORzEwDQ1Xr1pzwrddiySMf8",
+        "full_membership_investor": "price_1ORzEwDQ1Xr1pzwrddiySMf8",
+        "dropin_membership": "price_1ONYEQDQ1Xr1pzwrEDuNuVty",
+        "dropin_membership_investor": "price_1ONYEQDQ1Xr1pzwrEDuNuVty",
+        "dropin_events": "price_1ORzAdDQ1Xr1pzwrhklMOssR",
+        "dropin_events_investor": "price_1ORzAdDQ1Xr1pzwrhklMOssR"
       }
-      
+
     }
-    
+
 
 
     try {
@@ -1037,7 +1037,7 @@ app.post("/cancelSubscription", async (req, res) => {
       }
     }
 
-    
+
     res.status(200).send("Success");
   } catch (error) {
     console.error(error);
