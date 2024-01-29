@@ -567,7 +567,7 @@ app.post("/application-checkout", async (req, res) => {
   }
 
 
-   const membership = await getMemberType(result.membership, result.member_zone)
+  const membership = await getMemberType(result.membership, result.member_zone)
 
 
 
@@ -934,11 +934,10 @@ app.post("/setupSubscription", async (req, res) => {
     const customerDetails = payments[i]
     const customerId = customerDetails["customerid"]
     const paymentId = customerDetails["paymentid"]
-    const paymentType = customerDetails["payment_cadence"]
     const membership = customerDetails["membership"]
     var subscriptionType = {}
 
-    if (paymentType == "monthly") {
+    if (customerDetails["payment_cadence"] == "Monthly") {
 
       subscriptionType = {
         "full_membership": "price_1O7HklDQ1Xr1pzwrWaL9VPaP",
@@ -960,7 +959,9 @@ app.post("/setupSubscription", async (req, res) => {
         "dropin_membership": "price_1ONYEQDQ1Xr1pzwrEDuNuVty",
         "dropin_membership_investor": "price_1ONYEQDQ1Xr1pzwrEDuNuVty",
         "dropin_events": "price_1ORzAdDQ1Xr1pzwrhklMOssR",
-        "dropin_events_investor": "price_1ORzAdDQ1Xr1pzwrhklMOssR"
+        "dropin_events_investor": "price_1ORzAdDQ1Xr1pzwrhklMOssR",
+        "online_membership": "price_1OH5ODDQ1Xr1pzwrh1agL7A2",
+        "online_membership_investor": "price_1OH5ODDQ1Xr1pzwrh1agL7A2"
       }
 
     }
