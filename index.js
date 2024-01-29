@@ -567,37 +567,13 @@ app.post("/application-checkout", async (req, res) => {
   }
 
 
-  if (result.membership == "Full Membership" && result.member_zone == "investor") {
-    result.membership = "full_membership_investor"
-  }
-  else if (result.membership == "Full Membership" && result.member_zone != "investor") {
-    result.membership = "full_membership"
-  }
-  else if (result.membership == "Online Membership" && result.member_zone == "investor") {
-    result.membership = "online_membership_investor"
-  }
-  else if (result.membership == "Online Membership" && result.member_zone != "investor") {
-    result.membership = "online_membership"
-  }
-  else if (result.membership == "Drop-in Membership" && result.member_zone == "investor") {
-    result.membership = "dropin_membership_investor"
-  }
-  else if (result.membership == "Drop-in Membership" && result.member_zone != "investor") {
-    result.membership = "dropin_membership"
-  }
-  else if (result.membership == "Drop-in Events" && result.member_zone == "investor") {
-    result.membership = "dropin_events_investor"
-  }
-  else if (result.membership == "Drop-in Events" && result.member_zone != "investor") {
-    result.membership = "dropin_events"
-  }
-  else {
-    result.membership = "other"
-  }
+   const membership = await getMemberType(result.membership, result.member_zone)
 
 
 
 
+  console.log("membership", membership)
+  result.membership = membership
   result.createdAt = createdAt;
   result.clubhouse = "oldstreet";
   result.approved = false;
@@ -620,6 +596,38 @@ app.post("/application-checkout", async (req, res) => {
     res.status(400).send({ error });
   }
 });
+
+async function getMemberType(type, zone) {
+
+  if (type == "Full Membership" && zone == "investor") {
+    return "full_membership_investor"
+  }
+  else if (type == "Full Membership" && zone != "investor") {
+    return "full_membership"
+  }
+  else if (type == "Online Membership" && zone == "investor") {
+    return "online_membership_investor"
+  }
+  else if (type == "Online Membership" && zone != "investor") {
+    return "online_membership"
+  }
+  else if (type == "Drop-in Membership" && zone == "investor") {
+    return "dropin_membership_investor"
+  }
+  else if (type == "Drop-in Membership" && zone != "investor") {
+    return "dropin_membership"
+  }
+  else if (type == "Drop-in Events" && zone == "investor") {
+    return "dropin_events_investor"
+  }
+  else if (type == "Drop-in Events" && zone != "investor") {
+    return "dropin_events"
+  }
+  else {
+    return "other"
+  }
+
+}
 
 
 app.post("/add-customer", async (req, res) => {
