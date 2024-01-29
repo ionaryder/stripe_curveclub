@@ -955,16 +955,16 @@ app.post("/setupSubscription", async (req, res) => {
 
       console.log("the customer details", customerDetails)
 
-      // subscriptionType = {
-      //   "full_membership": "price_1ORzEwDQ1Xr1pzwrddiySMf8",
-      //   "full_membership_investor": "price_1ORzEwDQ1Xr1pzwrddiySMf8",
-      //   "dropin_membership": "price_1ONYEQDQ1Xr1pzwrEDuNuVty",
-      //   "dropin_membership_investor": "price_1ONYEQDQ1Xr1pzwrEDuNuVty",
-      //   "dropin_events": "price_1ORzAdDQ1Xr1pzwrhklMOssR",
-      //   "dropin_events_investor": "price_1ORzAdDQ1Xr1pzwrhklMOssR",
-      //   "online_membership": "price_1OH5ODDQ1Xr1pzwrh1agL7A2",
-      //   "online_membership_investor": "price_1OH5ODDQ1Xr1pzwrh1agL7A2"
-      // }
+      subscriptionType = {
+        "full_membership": "price_1ORzEwDQ1Xr1pzwrddiySMf8",
+        "full_membership_investor": "price_1ORzEwDQ1Xr1pzwrddiySMf8",
+        "dropin_membership": "price_1ONYEQDQ1Xr1pzwrEDuNuVty",
+        "dropin_membership_investor": "price_1ONYEQDQ1Xr1pzwrEDuNuVty",
+        "dropin_events": "price_1ORzAdDQ1Xr1pzwrhklMOssR",
+        "dropin_events_investor": "price_1ORzAdDQ1Xr1pzwrhklMOssR",
+        "online_membership": "price_1OH5ODDQ1Xr1pzwrh1agL7A2",
+        "online_membership_investor": "price_1OH5ODDQ1Xr1pzwrh1agL7A2"
+      }
 
     }
 
