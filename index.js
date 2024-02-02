@@ -587,13 +587,6 @@ app.post("/application-checkout", async (req, res) => {
 
   const membership = await getMemberType(result.membership, result.member_zone)
 
-  if (result.payment_cadence == "Monthly"){
-    result.paymentType = "monthly"
-  }
-  else {
-    result.paymentType = "annual"
-    result.payment_cadence = "annual"
-  }
 
 
   console.log("membership", membership)
@@ -606,7 +599,16 @@ app.post("/application-checkout", async (req, res) => {
   result.date = date;
   result.paymentMethod = "CARD";
 
-  
+
+  if (result.payment_cadence == "Monthly" || result.membership == "online_membership") {
+    result.paymentType = "monthly"
+  }
+  else {
+    result.paymentType = "annual"
+    result.payment_cadence = "annual"
+  }
+
+
 
   console.log("the result", result);
 
