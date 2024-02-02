@@ -207,7 +207,25 @@ app.post('/webhook', async (req, res) => {
     case 'invoice.finalized':
       const invoice = event.data.object;
       console.log("customer", invoice.customer, "at invoice finalized")
-      //Find the customer in the members table, get their memberID and create an object to be appended to the members_activity table. 
+      if (invoice.amount_paid == 0 && invoice.status != "void") {
+        console.log("getting defaulting customer")
+        getDefaultingCustomer(invoice_updated)
+          .then((memberId) => {
+            console.log("worked", memberId)
+          })
+          .catch((error) => {
+            console.log("catch", error)
+          });
+      }
+      else if (invoice.amount_remaining == 0 && invoice.status == "paid") {
+        getActiveCustomer(invoice)
+          .then((memberId) => {
+            console.log("worked", memberId)
+          })
+          .catch((error) => {
+            console.log("catch", error)
+          });
+      }
 
       break
     case 'invoice.payment_failed':
@@ -387,7 +405,7 @@ async function getActiveCustomer(invoice) {
 
     // Create a new document in the "members_activity" collection with the desired structure
 
-    if (status == "active") {
+    if (status == "active" || status == "defaulting") {
 
       const newDocumentData = {
         status: 'active',
@@ -569,7 +587,13 @@ app.post("/application-checkout", async (req, res) => {
 
   const membership = await getMemberType(result.membership, result.member_zone)
 
-
+  if (result.payment_cadence == "Monthly"){
+    result.paymentType = "monthly"
+  }
+  else {
+    result.paymentType = "annual"
+    result.payment_cadence = "annual"
+  }
 
 
   console.log("membership", membership)
@@ -580,8 +604,9 @@ app.post("/application-checkout", async (req, res) => {
   result.freeMembership = false;
   result.stripe_complete = false;
   result.date = date;
-  result.paymentMethod = "CARD"
-  result.paymentType = "monthly"
+  result.paymentMethod = "CARD";
+
+  
 
   console.log("the result", result);
 
