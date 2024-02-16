@@ -9,12 +9,19 @@ const SSE = require('express-sse');
 const sse = new SSE();
 
 
+
 //FIREBASE
+var serviceAccount = require("./ccServiceAccountKey.json")
 const { initializeApp } = require("firebase/app");
 const { doc, setDoc, getFirestore, collection, query, where, getDocs, getDoc, updateDoc, serverTimestamp, addDoc } = require("firebase/firestore");
 const { Console } = require('console');
 require('firebase/compat/auth');
 require('firebase/compat/firestore');
+var admin = require("firebase-admin");
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: "https://curveclub-68421-default-rtdb.europe-west1.firebasedatabase.app"
+});
 
 const firebaseConfig = {
   apiKey: process.env.firebase_apikey,
@@ -28,6 +35,8 @@ const firebaseConfig = {
 // Initialize Firebase
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+
 
 var applicationInformation = {}
 var memberInformation = {}
@@ -682,9 +691,6 @@ app.post("/add-customer", async (req, res) => {
   res.json({ url: session.url });
 })
 
-
-
-
 app.post("/prebuiltcheckout", async (req, res) => {
 
   console.log("prebuilt checkout hit", req.body)
@@ -1083,6 +1089,89 @@ app.post("/cancelSubscription", async (req, res) => {
   }
 
 })
+
+app.post("/sendNotification", async (req, res) => {
+  const data = req.body;
+
+  const membersCollection = collection(db, 'members');
+
+  // Create a Firestore query to find the applicant with a matching email
+  const q = query(membersCollection, where('fcmToken', '!=', ''), where('active', '==', true));
+
+
+
+  // Execute the query and get the results
+  const querySnapshot = await getDocs(q);
+
+  // Check if the applicants were found
+  if (querySnapshot.empty) {
+    console.log(`No matching members found with fcmToken`);
+    return;
+  }
+
+  try {
+
+     querySnapshot.forEach(async (doc) => {
+
+      const member_data = doc.data()
+      const fcmToken = member_data.fcmToken
+
+       const { title, message } = data;
+       const messagePayload = {
+         token: fcmToken,
+         notification: {
+           title: title,
+           body: message,
+         },
+       };
+       try {
+         // await admin.messaging().send(messagePayload);
+         console.log('Notification sent successfully not sent.', messagePayload);
+       } catch (error) {
+         console.error('Error sending notification:', error);
+       }
+
+     })
+
+     res.status(200).send("Success");
+  }
+  catch {
+     res.status(500).send("Fail");
+  }
+
+
+
+});
+
+app.post("/sendNotificationTest", async (req, res) => {
+  const data = req.body;
+
+  try {
+
+       const { title, message, fcmToken } = data;
+       const messagePayload = {
+         token: fcmToken,
+         notification: {
+           title: title,
+           body: message,
+         },
+       };
+       try {
+         await admin.messaging().send(messagePayload);
+         console.log('Notification sent successfully.');
+       } catch (error) {
+         console.error('Error sending notification:', error);
+       }
+
+     res.status(200).send("Success");
+  }
+  catch {
+     res.status(500).send("Fail");
+  }
+
+
+
+});
 
 
 app.listen(process.env.PORT || 3000, () => {
