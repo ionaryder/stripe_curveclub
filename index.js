@@ -1125,8 +1125,8 @@ app.post("/sendNotification", async (req, res) => {
          },
        };
        try {
-         // await admin.messaging().send(messagePayload);
-         console.log('Notification sent successfully not sent.', messagePayload);
+         await admin.messaging().send(messagePayload);
+         console.log('Notification sent successfully sent.', messagePayload);
        } catch (error) {
          console.error('Error sending notification:', error);
        }
