@@ -11,7 +11,6 @@ const sse = new SSE();
 
 
 //FIREBASE
-var serviceAccount = require("./ccServiceAccountKey.json")
 const { initializeApp } = require("firebase/app");
 const { doc, setDoc, getFirestore, collection, query, where, getDocs, getDoc, updateDoc, serverTimestamp, addDoc } = require("firebase/firestore");
 const { Console } = require('console');
@@ -19,7 +18,18 @@ require('firebase/compat/auth');
 require('firebase/compat/firestore');
 var admin = require("firebase-admin");
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
+  credential: admin.credential.cert({
+      type: process.env.FIREBASE_TYPE,
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+      private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      client_email: process.env.FIREBASE_CLIENT_EMAIL,
+      client_id: process.env.FIREBASE_CLIENT_ID,
+      auth_uri: process.env.FIREBASE_AUTH_URI,
+    token_uri: process.env.FIREBASE_TOKEN_URI,
+    auth_provider_x509_cert_url: process.env.FIREBASE_AUTH_PROVIDER_,
+    client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_
+    }),
   databaseURL: "https://curveclub-68421-default-rtdb.europe-west1.firebasedatabase.app"
 });
 
@@ -607,6 +617,7 @@ app.post("/application-checkout", async (req, res) => {
   result.stripe_complete = false;
   result.date = date;
   result.paymentMethod = "CARD";
+  result.withdrawn = false
 
 
   if (result.payment_cadence == "Monthly" || result.membership == "online_membership") {
