@@ -19,17 +19,17 @@ require('firebase/compat/firestore');
 var admin = require("firebase-admin");
 admin.initializeApp({
   credential: admin.credential.cert({
-      type: process.env.FIREBASE_TYPE,
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
-      private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-      client_email: process.env.FIREBASE_CLIENT_EMAIL,
-      client_id: process.env.FIREBASE_CLIENT_ID,
-      auth_uri: process.env.FIREBASE_AUTH_URI,
+    type: process.env.FIREBASE_TYPE,
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    client_email: process.env.FIREBASE_CLIENT_EMAIL,
+    client_id: process.env.FIREBASE_CLIENT_ID,
+    auth_uri: process.env.FIREBASE_AUTH_URI,
     token_uri: process.env.FIREBASE_TOKEN_URI,
     auth_provider_x509_cert_url: process.env.FIREBASE_AUTH_PROVIDER_,
     client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_
-    }),
+  }),
   databaseURL: "https://curveclub-68421-default-rtdb.europe-west1.firebasedatabase.app"
 });
 
@@ -1122,32 +1122,32 @@ app.post("/sendNotification", async (req, res) => {
 
   try {
 
-     querySnapshot.forEach(async (doc) => {
+    querySnapshot.forEach(async (doc) => {
 
       const member_data = doc.data()
       const fcmToken = member_data.fcmToken
 
-       const { title, message } = data;
-       const messagePayload = {
-         token: fcmToken,
-         notification: {
-           title: title,
-           body: message,
-         },
-       };
-       try {
-         await admin.messaging().send(messagePayload);
-         console.log('Notification sent successfully sent.', messagePayload);
-       } catch (error) {
-         console.error('Error sending notification:', error);
-       }
+      const { title, message } = data;
+      const messagePayload = {
+        token: fcmToken,
+        notification: {
+          title: title,
+          body: message,
+        },
+      };
+      try {
+        await admin.messaging().send(messagePayload);
+        console.log('Notification sent successfully sent.', messagePayload);
+      } catch (error) {
+        console.error('Error sending notification:', error);
+      }
 
-     })
+    })
 
-     res.status(200).send("Success");
+    res.status(200).send("Success");
   }
   catch {
-     res.status(500).send("Fail");
+    res.status(500).send("Fail");
   }
 
 
@@ -1159,30 +1159,73 @@ app.post("/sendNotificationTest", async (req, res) => {
 
   try {
 
-       const { title, message, fcmToken } = data;
-       const messagePayload = {
-         token: fcmToken,
-         notification: {
-           title: title,
-           body: message,
-         },
-       };
-       try {
-         await admin.messaging().send(messagePayload);
-         console.log('Notification sent successfully.');
-       } catch (error) {
-         console.error('Error sending notification:', error);
-       }
+    const { title, message, fcmToken } = data;
+    const messagePayload = {
+      token: fcmToken,
+      notification: {
+        title: title,
+        body: message,
+      },
+    };
+    try {
+      await admin.messaging().send(messagePayload);
+      console.log('Notification sent successfully.');
+    } catch (error) {
+      console.error('Error sending notification:', error);
+    }
 
-     res.status(200).send("Success");
+    res.status(200).send("Success");
   }
   catch {
-     res.status(500).send("Fail");
+    res.status(500).send("Fail");
   }
-
-
-
 });
+
+app.post("/sendNotificationArray", async (req, res) => {
+  const data = req.body;
+  try {
+    const { title, message, fcmTokens } = data; // Assume fcmTokens is an array of tokens
+
+    // Prepare a promise array to hold all send operations
+    let sendPromises = [];
+
+    const matches = fcmTokens.match(/"([^"]+)"/g);
+
+    // If there are matches, process them to remove the surrounding quotes
+    const array = matches ? matches.map(match => match.replace(/"/g, '')) : [];
+
+    console.log("array", array);
+
+    array.forEach(fcmToken => {
+      console.log(fcmToken)
+      const messagePayload = {
+        token: fcmToken,
+        notification: {
+          title: title,
+          body: message,
+        },
+      };
+
+      // Push each send operation's promise into the array
+      sendPromises.push(admin.messaging().send(messagePayload));
+    });
+
+    // Use Promise.all to wait for all send operations to complete
+    try {
+      await Promise.all(sendPromises);
+      console.log('All notifications sent successfully.');
+      res.status(200).send("Success");
+    } catch (error) {
+      console.error('Error sending notifications:', error);
+      res.status(500).send("Error sending one or more notifications");
+    }
+
+  } catch (error) {
+    console.error('Error processing request:', error);
+    res.status(500).send("Fail");
+  }
+});
+
 
 
 app.listen(process.env.PORT || 3000, () => {
