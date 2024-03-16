@@ -12,7 +12,7 @@ const sse = new SSE();
 
 //FIREBASE
 const { initializeApp } = require("firebase/app");
-const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
+const privateKey = process.env['FIREBASE_PRIVATE_KEY'].replace(/\\n/g, '\n');
 const { doc, setDoc, getFirestore, collection, query, where, getDocs, getDoc, updateDoc, serverTimestamp, addDoc } = require("firebase/firestore");
 const { Console } = require('console');
 require('firebase/compat/auth');
