@@ -223,13 +223,20 @@ app.post('/webhook', async (req, res) => {
           setDoc(appRef, { approved: true, active: true }, { merge: true });
         });
       }
-      else if (chargeSucceeded.customer == null){
+
+    case 'charge.succeeded.complete':
+      const chargeSucceeded = event.data.object;
+      console.log("charge succeeded", chargeSucceeded)
+      console.log("customer code", chargeSucceeded.customer)
+      console.log("customer paid", chargeSucceeded.paid)
+      
+     if (chargeSucceeded.customer == null){
         const customer_details = chargeSucceeded.customer_details
         console.log(customer_details)
         const email = customer_details["email"]
         const name = customer_details["name"]
         console.log("email", email, "name", name)
-        
+
       }
 
     case 'invoice.finalized':
