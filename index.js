@@ -225,8 +225,9 @@ app.post('/webhook', async (req, res) => {
       }
       else if (chargeSucceeded.customer == null){
         const customer_details = chargeSucceeded.customer_details
-        const email = customer_details.email
-        const name = customer_details.name
+        console.log(customer_details)
+        const email = customer_details["email"]
+        const name = customer_details["name"]
         console.log("email", email, "name", name)
         
       }
