@@ -225,13 +225,13 @@ app.post('/webhook', async (req, res) => {
       }
 
     case 'charge.succeeded.complete':
-      const chargeSucceeded = event.data.object;
-      console.log("charge succeeded", chargeSucceeded)
-      console.log("customer code", chargeSucceeded.customer)
-      console.log("customer paid", chargeSucceeded.paid)
+      const chargeComplete = event.data.object;
+      console.log("charge succeeded", chargeComplete)
+      console.log("customer code", chargeComplete.customer)
+      console.log("customer paid", chargeComplete.paid)
       
-     if (chargeSucceeded.customer == null){
-        const customer_details = chargeSucceeded.customer_details
+     if (chargeComplete.customer == null){
+        const customer_details = chargeComplete.customer_details
         console.log(customer_details)
         const email = customer_details["email"]
         const name = customer_details["name"]
