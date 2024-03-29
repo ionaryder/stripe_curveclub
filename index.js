@@ -215,13 +215,20 @@ app.post('/webhook', async (req, res) => {
 
       const q = query(collection(db, "applications"), where("customer", "==", chargeSucceeded.customer));
 
-      if (chargeSucceeded.paid == true) {
+      if (chargeSucceeded.paid == true && chargeSucceeded.customer != null) {
         const querySnapshot = await getDocs(q);
         querySnapshot.forEach((document) => {
           console.log(document.id, " => ", document.data());
           const appRef = doc(db, 'applications', document.id);
           setDoc(appRef, { approved: true, active: true }, { merge: true });
         });
+      }
+      else if (chargeSucceeded.customer == null){
+        const customer_details = chargeSucceeded.customer_details
+        const email = customer_details.email
+        const name = customer_details.name
+        console.log("email", email, "name", name)
+        
       }
 
     case 'invoice.finalized':
