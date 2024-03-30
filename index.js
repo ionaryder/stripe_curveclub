@@ -236,6 +236,14 @@ app.post('/webhook', async (req, res) => {
         const email = customer_details["email"]
         const name = customer_details["name"]
         console.log("email", email, "name", name)
+         const info = {
+           "name" : name,
+           "email" : email 
+         }
+        const dayPassRef = collection(db, "day_pass");
+        await addDoc(dayPassRef, info);
+
+      
 
       }
 
