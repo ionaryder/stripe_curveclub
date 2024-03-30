@@ -13,7 +13,7 @@ const sse = new SSE();
 //FIREBASE
 const { initializeApp } = require("firebase/app");
 const privateKey = process.env['FIREBASE_PRIVATE_KEY'].replace(/\\n/g, '\n');
-const { doc, setDoc, getFirestore, collection, query, where, getDocs, getDoc, updateDoc, serverTimestamp, addDoc } = require("firebase/firestore");
+const { doc, setDoc, getFirestore, Timestamp, collection, query, where, getDocs, getDoc, updateDoc, serverTimestamp, addDoc } = require("firebase/firestore");
 const { Console } = require('console');
 require('firebase/compat/auth');
 require('firebase/compat/firestore');
@@ -238,7 +238,8 @@ app.post('/webhook', async (req, res) => {
         console.log("email", email, "name", name)
          const info = {
            "name" : name,
-           "email" : email 
+           "email" : email, 
+           "timestamp": Timestamp.fromDate(new Date())
          }
         const dayPassRef = collection(db, "day_pass");
         await addDoc(dayPassRef, info);
