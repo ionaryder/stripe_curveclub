@@ -215,7 +215,7 @@ app.post('/webhook', async (req, res) => {
 
       const q = query(collection(db, "applications"), where("customer", "==", chargeSucceeded.customer));
 
-      if (chargeSucceeded.paid == true && chargeSucceeded.customer != null) {
+      if (chargeSucceeded.paid == true && chargeSucceeded.customer != null && chargeSucceeded.amount != 2500) {
         const querySnapshot = await getDocs(q);
         querySnapshot.forEach((document) => {
           console.log(document.id, " => ", document.data());
@@ -683,6 +683,12 @@ async function getMemberType(type, zone) {
   else if (type == "Online Membership" && zone != "investor") {
     return "online_membership"
   }
+  else if (type == "Drop-in Membership Light" && zone == "investor") {
+    return "dropin_membership_light_investor"
+  }
+  else if (type == "Drop-in Membership Light" && zone != "investor") {
+    return "dropin_membership_light"
+  }
   else if (type == "Drop-in Membership" && zone == "investor") {
     return "dropin_membership_investor"
   }
@@ -695,6 +701,9 @@ async function getMemberType(type, zone) {
   else if (type == "Drop-in Events" && zone != "investor") {
     return "dropin_events"
   }
+    else if (type == "Mini Membership") {
+      return "mini_membership"
+    }
   else {
     return "other"
   }
@@ -1013,10 +1022,13 @@ app.post("/setupSubscription", async (req, res) => {
         "full_membership_investor": "price_1O7HklDQ1Xr1pzwrWaL9VPaP",
         "dropin_membership": "price_1ORz88DQ1Xr1pzwrH8QbCRJm",
         "dropin_membership_investor": "price_1ORz88DQ1Xr1pzwrH8QbCRJm",
+        "dropin_membership_light": "price_1OyOskDQ1Xr1pzwr3KqQgdBK",
+        "dropin_membership_light_investor": "price_1OyOskDQ1Xr1pzwr3KqQgdBK",
         "dropin_events": "price_1ORz94DQ1Xr1pzwr2cPJUKDX",
         "dropin_events_investor": "price_1ORz94DQ1Xr1pzwr2cPJUKDX",
         "online_membership": "price_1OH5ODDQ1Xr1pzwrh1agL7A2",
-        "online_membership_investor": "price_1OH5ODDQ1Xr1pzwrh1agL7A2"
+        "online_membership_investor": "price_1OH5ODDQ1Xr1pzwrh1agL7A2",
+        "mini_membership": "price_1P2ySYDQ1Xr1pzwrFHHsmb8c"
       }
 
     }
@@ -1029,10 +1041,13 @@ app.post("/setupSubscription", async (req, res) => {
         "full_membership_investor": "price_1ORzEwDQ1Xr1pzwrddiySMf8",
         "dropin_membership": "price_1ONYEQDQ1Xr1pzwrEDuNuVty",
         "dropin_membership_investor": "price_1ONYEQDQ1Xr1pzwrEDuNuVty",
+        "dropin_membership_light": "price_1OH663DQ1Xr1pzwrutLMhpgz",
+        "dropin_membership_light_investor": "price_1OH663DQ1Xr1pzwrutLMhpgz",
         "dropin_events": "price_1ORzAdDQ1Xr1pzwrhklMOssR",
         "dropin_events_investor": "price_1ORzAdDQ1Xr1pzwrhklMOssR",
         "online_membership": "price_1OH5ODDQ1Xr1pzwrh1agL7A2",
-        "online_membership_investor": "price_1OH5ODDQ1Xr1pzwrh1agL7A2"
+        "online_membership_investor": "price_1OH5ODDQ1Xr1pzwrh1agL7A2",
+        "mini_membership": "price_1P2ySYDQ1Xr1pzwrFHHsmb8c"
       }
 
     }
