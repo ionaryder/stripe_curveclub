@@ -230,7 +230,7 @@ app.post('/webhook', async (req, res) => {
       console.log("customer code", chargeComplete.customer)
       console.log("customer paid", chargeComplete.paid)
       
-     if (chargeComplete.customer == null){
+     if (chargeComplete.customer == null && chargeComplete.amount_total == 6000){
         const customer_details = chargeComplete.billing_details
         console.log(customer_details)
         const email = customer_details["email"]
