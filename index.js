@@ -135,24 +135,7 @@ app.post('/webhook', async (req, res) => {
       const session = event.data.object;
       // console.log("checkout session id: ", session)
 
-      if (chargeComplete.customer == null && chargeComplete.amount_total == 6000) {
-        const customer_details = chargeComplete.billing_details
-        console.log(customer_details)
-        const email = customer_details["email"]
-        const name = customer_details["name"]
-        console.log("email", email, "name", name)
-        const info = {
-          "name": name,
-          "email": email,
-          "timestamp": Timestamp.fromDate(new Date())
-        }
-        const dayPassRef = collection(db, "day_pass");
-        await addDoc(dayPassRef, info);
-
-
-
-      }
-      else if (eventid != "" && currentUser != "") {
+      if (eventid != "" && currentUser != "") {
         signUserUp(eventid, currentUser)
       }
       else if (claimPassInformation != {}) {
@@ -243,11 +226,11 @@ app.post('/webhook', async (req, res) => {
 
     case 'charge.succeeded.complete':
       const chargeComplete = event.data.object;
-      console.log("charge succeeded", chargeComplete)
+      console.log("charge succeeded complete", chargeComplete)
       console.log("customer code", chargeComplete.customer)
       console.log("customer paid", chargeComplete.paid)
 
-      if (chargeComplete.customer == null && chargeComplete.amount_total == 6000) {
+      if (chargeComplete.customer == null && chargeComplete.amount_captured == 6000 && chargeComplete.paid == true) {
         const customer_details = chargeComplete.billing_details
         console.log(customer_details)
         const email = customer_details["email"]
