@@ -135,8 +135,24 @@ app.post('/webhook', async (req, res) => {
       const session = event.data.object;
       // console.log("checkout session id: ", session)
 
+      if (chargeComplete.customer == null && chargeComplete.amount_total == 6000) {
+        const customer_details = chargeComplete.billing_details
+        console.log(customer_details)
+        const email = customer_details["email"]
+        const name = customer_details["name"]
+        console.log("email", email, "name", name)
+        const info = {
+          "name": name,
+          "email": email,
+          "timestamp": Timestamp.fromDate(new Date())
+        }
+        const dayPassRef = collection(db, "day_pass");
+        await addDoc(dayPassRef, info);
 
-      if (eventid != "" && currentUser != "") {
+
+
+      }
+      else if (eventid != "" && currentUser != "") {
         signUserUp(eventid, currentUser)
       }
       else if (claimPassInformation != {}) {
@@ -167,6 +183,7 @@ app.post('/webhook', async (req, res) => {
       console.log("SetupIntent Created: ", setupIntent.id)
       console.log("Customer: ", setupIntent.customer)
       console.log("Payment Method", setupIntent.payment_method)
+      console.log("current application info", applicationInformation)
       applicationInformation.customer = setupIntent.customer
       // applicationInformation.payment_method = setupIntent.payment_method
       applicationInformation.onboarded = false
@@ -229,22 +246,22 @@ app.post('/webhook', async (req, res) => {
       console.log("charge succeeded", chargeComplete)
       console.log("customer code", chargeComplete.customer)
       console.log("customer paid", chargeComplete.paid)
-      
-     if (chargeComplete.customer == null && chargeComplete.amount_total == 6000){
+
+      if (chargeComplete.customer == null && chargeComplete.amount_total == 6000) {
         const customer_details = chargeComplete.billing_details
         console.log(customer_details)
         const email = customer_details["email"]
         const name = customer_details["name"]
         console.log("email", email, "name", name)
-         const info = {
-           "name" : name,
-           "email" : email, 
-           "timestamp": Timestamp.fromDate(new Date())
-         }
+        const info = {
+          "name": name,
+          "email": email,
+          "timestamp": Timestamp.fromDate(new Date())
+        }
         const dayPassRef = collection(db, "day_pass");
         await addDoc(dayPassRef, info);
 
-      
+
 
       }
 
@@ -701,9 +718,9 @@ async function getMemberType(type, zone) {
   else if (type == "Drop-in Events" && zone != "investor") {
     return "dropin_events"
   }
-    else if (type == "Mini Membership") {
-      return "mini_membership"
-    }
+  else if (type == "Mini Membership") {
+    return "mini_membership"
+  }
   else {
     return "other"
   }
