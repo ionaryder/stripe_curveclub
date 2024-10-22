@@ -202,7 +202,7 @@ app.post('/webhook', async (req, res) => {
         querySnapshot2.forEach((document) => {
           console.log(document.id, " => ", document.data());
           const appRef = doc(db, 'applications', document.id);
-          setDoc(appRef, { chargeFailed: true }, { merge: true });
+          setDoc(appRef, { chargeFailed: true, committeeApproved: false }, { merge: true });
         });
 
       }
