@@ -275,6 +275,18 @@ app.post('/webhook', async (req, res) => {
     case 'invoice.payment_failed':
       const failed_invoice = event.data.object;
       console.log("failing customer", failed_invoice.customer)
+      if (!applicationInformation.length == 0) {
+
+        const q1 = query(collection(db, "applications"), where("customer", "==", chargeFailed.customer));
+
+        const querySnapshot2 = await getDocs(q1);
+        querySnapshot2.forEach((document) => {
+          console.log(document.id, " => ", document.data());
+          const appRef = doc(db, 'applications', document.id);
+          setDoc(appRef, { chargeFailed: true, committeeApproved: false }, { merge: true });
+        });
+
+      }
       getDefaultingCustomer(failed_invoice)
       break
 
